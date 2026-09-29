@@ -378,11 +378,16 @@ function challengeDayNumber(c, today) {
 
 const ACHIEVEMENTS = [
     { id: 'first', emoji: '🏆', title: 'Primeiro treino', desc: 'Registre seu primeiro treino' },
+    { id: 'cardio1', emoji: '🏃', title: 'Primeiro cardio', desc: 'Faça seu primeiro cardio que pontua' },
+    { id: 'photos10', emoji: '📸', title: '10 fotos de treino', desc: 'Registre 10 treinos com foto' },
     { id: 'streak7', emoji: '🔥', title: '7 dias seguidos', desc: '7 dias com todos os hábitos diários' },
-    { id: 'water7', emoji: '💧', title: '7 dias de água', desc: 'Bata 3 L em 7 dias' },
+    { id: 'water7', emoji: '💧', title: '7 dias de água', desc: 'Bata a meta de água em 7 dias' },
+    { id: 'water15', emoji: '🌊', title: '15 dias de água', desc: 'Bata a meta de água em 15 dias' },
     { id: 'sweets10', emoji: '🍫', title: '10 dias sem doce', desc: 'Sequência de 10 dias sem doce' },
+    { id: 'sweets30', emoji: '🏅', title: '30 dias sem doce', desc: 'Sequência de 30 dias sem doce' },
     { id: 'alcohol10', emoji: '🍺', title: '10 dias sem álcool', desc: 'Sequência de 10 dias sem álcool' },
     { id: 'week5', emoji: '🏋️', title: '5 treinos na semana', desc: 'Faça 5 treinos em uma semana' },
+    { id: 'perfectweek', emoji: '🌟', title: 'Semana perfeita', desc: 'Cumpra os mínimos de treino e cardio na mesma semana' },
     { id: 'w20', emoji: '💪', title: '20 treinos', desc: 'Acumule 20 treinos' },
     { id: 'leader', emoji: '👑', title: 'Líder do ranking', desc: 'Fique em 1º lugar' },
     { id: 'complete', emoji: '🎖️', title: 'Desafio completo', desc: 'Termine todos os dias do desafio' },
@@ -410,6 +415,22 @@ function unlockedAchievements(userId, stats, data, challenge, position, ended) {
         out.push('week5');
     if (workouts.length >= 20)
         out.push('w20');
+    const cardios = data.cardios.filter((c) => c.userId === userId && c.minutes >= challenge.rules.cardioMinMinutes);
+    if (cardios.length >= 1)
+        out.push('cardio1');
+    if (workouts.filter((w) => w.hasPhoto).length >= 10)
+        out.push('photos10');
+    if (stats.waterDays >= 15)
+        out.push('water15');
+    if (stats.bestSweetsStreak >= 30)
+        out.push('sweets30');
+    const cardioWeek = new Map();
+    for (const c of cardios) {
+        const wk = weekIndex(challenge.startDate, c.date);
+        cardioWeek.set(wk, (cardioWeek.get(wk) ?? 0) + 1);
+    }
+    if ([...perWeek.entries()].some(([wk, n]) => n >= challenge.rules.workoutsPerWeek && (cardioWeek.get(wk) ?? 0) >= challenge.rules.cardioPerWeek))
+        out.push('perfectweek');
     if (position === 1 && stats.points > 0)
         out.push('leader');
     if (ended && stats.failedWeeks === 0)
@@ -667,15 +688,27 @@ function statusPill(st, n, r) {
 function chip(label, on, act) { return '<button class="chip' + (on ? ' on' : '') + '" data-a="' + act + '">' + label + '</button>'; }
 function field(id, label, attrs) { return '<label class="f">' + label + '<input class="i" id="' + id + '" value="' + esc(ui.f[id] || '') + '" ' + (attrs || '') + '></label>'; }
 function ago(t) { var s = (Date.now() - t) / 1000; if (s < 60) return 'agora'; if (s < 3600) return 'há ' + Math.floor(s / 60) + ' min'; if (s < 86400) return 'há ' + Math.floor(s / 3600) + ' h'; return 'há ' + Math.floor(s / 86400) + ' d'; }
-function barChart(vals, labels, w, h) {
-  var max = Math.max(1, Math.max.apply(null, vals)), n = vals.length, bw = (w - 10) / n, s = '';
-  vals.forEach(function (v, i) { var bh = Math.max(2, (v / max) * (h - 26)); s += '<rect x="' + (5 + i * bw + bw * .15) + '" y="' + (h - 16 - bh) + '" width="' + (bw * .7) + '" height="' + bh + '" rx="4" fill="var(--rose)" opacity="' + (v ? 1 : .25) + '"/><text x="' + (5 + i * bw + bw / 2) + '" y="' + (h - 4) + '" text-anchor="middle">' + labels[i] + '</text>' + (v ? '<text x="' + (5 + i * bw + bw / 2) + '" y="' + (h - 20 - bh) + '" text-anchor="middle">' + v + '</text>' : ''); });
+function barChart(vals, labels, w, h, o) {
+  o = o || {}; var n = vals.length, goal = o.goal || 0, max = Math.max(1, goal, Math.max.apply(null, vals)), top = 16, bot = 16, ch = h - top - bot, bw = (w - 10) / n, bwid = Math.min(bw * .7, 26), s = '';
+  if (goal) { var gy = top + ch - (goal / max) * ch; s += '<line x1="5" x2="' + (w - 5) + '" y1="' + gy + '" y2="' + gy + '" stroke="var(--muted)" stroke-dasharray="4 4" opacity=".6"/><text x="' + (w - 5) + '" y="' + (gy - 3) + '" text-anchor="end">meta ' + goal + '</text>'; }
+  vals.forEach(function (v, i) {
+    var cx = 5 + i * bw + bw / 2, bh = Math.max(2, (v / max) * ch), fut = o.nd != null && i >= o.nd;
+    s += '<rect x="' + (cx - bwid / 2) + '" y="' + (top + ch - bh) + '" width="' + bwid + '" height="' + bh + '" rx="3" fill="var(--rose)" opacity="' + (fut ? .12 : v ? 1 : .3) + '"/>';
+    if (v && n <= 12) s += '<text x="' + cx + '" y="' + (top + ch - bh - 3) + '" text-anchor="middle">' + v + '</text>';
+    if (labels[i]) s += '<text x="' + cx + '" y="' + (h - 3) + '" text-anchor="middle">' + labels[i] + '</text>';
+  });
   return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" role="img">' + s + '</svg>';
 }
-function lineChart(vals, invert, w, h) {
-  if (!vals.length) return ''; var mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals), sp = Math.max(1, mx - mn), p = 12;
-  var pts = vals.map(function (v, i) { var x = p + (vals.length === 1 ? (w - 2 * p) / 2 : i / (vals.length - 1) * (w - 2 * p)), nrm = (v - mn) / sp; return [x, p + (invert ? nrm : 1 - nrm) * (h - 2 * p)]; });
-  return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" role="img"><polyline points="' + pts.map(function (q) { return q.join(','); }).join(' ') + '" fill="none" stroke="var(--rose)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>' + pts.map(function (q) { return '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="3.5" fill="var(--rose)"/>'; }).join('') + '</svg>';
+function lineChart(vals, invert, w, h, total) {
+  if (!vals.length) return ''; total = Math.max(total || vals.length, vals.length);
+  var mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals), flat = mx === mn, sp = Math.max(1, mx - mn), p = 14, top = 12, bot = 16, ch = h - top - bot;
+  var pts = vals.map(function (v, i) { var x = p + (total === 1 ? 0 : i / (total - 1) * (w - 2 * p)), nrm = flat ? .5 : (v - mn) / sp; return [x, top + (invert ? nrm : 1 - nrm) * ch]; });
+  var last = pts[pts.length - 1];
+  return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" role="img"><line x1="' + p + '" x2="' + (w - p) + '" y1="' + (top + ch + 4) + '" y2="' + (top + ch + 4) + '" stroke="var(--line)" stroke-width="1.5"/>' +
+    '<text x="' + p + '" y="' + (h - 2) + '" text-anchor="start">Dia 1</text><text x="' + (w - p) + '" y="' + (h - 2) + '" text-anchor="end">Dia ' + total + '</text>' +
+    (pts.length > 1 ? '<polyline points="' + pts.map(function (q) { return q.join(','); }).join(' ') + '" fill="none" stroke="var(--rose)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>' : '') +
+    pts.map(function (q, i) { return '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="' + (i === pts.length - 1 ? 5 : 3) + '" fill="var(--rose)"/>'; }).join('') +
+    '<text x="' + Math.min(Math.max(last[0], 20), w - 20) + '" y="' + Math.max(9, last[1] - 9) + '" text-anchor="middle">' + (invert ? '#' : '') + vals[vals.length - 1] + '</text></svg>';
 }
 
 /* ---------- Telas ---------- */
@@ -856,9 +889,10 @@ V.profile = function () {
     var got = unlockedAchievements(me(), mine, data(), c, pos, c.status === 'ended');
     // estatísticas
     var nd = Math.min(Math.max(0, dayIndex(c.startDate, TODAY)), c.durationDays - 1) + 1, dates = []; for (var i = 0; i < nd; i++) dates.push(addDays(c.startDate, i));
-    var weeks = Math.floor((nd - 1) / 7) + 1, wl = [], wv = [], cv = [];
+    var weeks = Math.ceil(c.durationDays / 7), nw = Math.floor((nd - 1) / 7) + 1, wl = [], wv = [], cv = [];
     for (var w = 0; w < weeks; w++) { wl.push('S' + (w + 1)); wv.push(S.workouts.filter(function (x) { return x.userId === me() && weekIndex(c.startDate, x.date) === w; }).length); cv.push(S.cardios.filter(function (x) { return x.userId === me() && x.minutes >= c.rules.cardioMinMinutes && weekIndex(c.startDate, x.date) === w; }).length); }
-    var wat = dates.map(function (d) { return Math.round(((S.days.filter(function (x) { return x.userId === me() && x.date === d; })[0] || {}).waterMl || 0) / 100) / 10; });
+    var allDates = []; for (var i2 = 0; i2 < c.durationDays; i2++) allDates.push(addDays(c.startDate, i2));
+    var wat = allDates.map(function (d) { return Math.round(((S.days.filter(function (x) { return x.userId === me() && x.date === d; })[0] || {}).waterMl || 0) / 100) / 10; });
     var cum = [], posv = [];
     dates.forEach(function (d) { var sub = { workouts: S.workouts.filter(function (x) { return x.date <= d; }), cardios: S.cardios.filter(function (x) { return x.date <= d; }), days: S.days.filter(function (x) { return x.date <= d; }) }; var st = g.memberIds.map(function (id) { return computeUserStats(id, sub, c, d); }), rk = buildRanking(st, 'geral'), m = rk.filter(function (x) { return x.userId === me(); })[0]; cum.push(m ? m.points : 0); posv.push(m ? m.position : g.memberIds.length); });
     var hist = S.workouts.filter(function (x) { return x.userId === me(); }).map(function (x) { return { id: x.id, col: 'workouts', date: x.date, t: '🏋️ Treino' }; }).concat(S.cardios.filter(function (x) { return x.userId === me(); }).map(function (x) { return { id: x.id, col: 'cardios', date: x.date, t: '🏃 Cardio · ' + x.minutes + ' min' }; })).sort(function (a, b) { return b.date < a.date ? -1 : 1; }).slice(0, 12);
@@ -866,8 +900,8 @@ V.profile = function () {
       '<div class="card" style="margin-top:12px"><p>🏋️ Treinos: <b>' + mine.workoutsTotal + '</b></p><p>🏃 Cardios (≥' + c.rules.cardioMinMinutes + ' min): <b>' + mine.cardioTotal + '</b></p><p>💧 Dias de água: <b>' + mine.waterDays + '</b></p><p>🍫 Dias sem doce: <b>' + mine.sweetsDays + '</b> · maior seq. ' + mine.bestSweetsStreak + '</p><p>🍺 Dias sem álcool: <b>' + mine.alcoholDays + '</b> · maior seq. ' + mine.bestAlcoholStreak + '</p></div>' +
       '<div class="row between"><h2>Minhas conquistas 🏅</h2><span class="sm muted">' + got.length + '/' + ACHIEVEMENTS.length + '</span></div><div class="grid2">' + ACHIEVEMENTS.map(function (a) { var on = got.indexOf(a.id) >= 0; return '<div class="card ach' + (on ? '' : ' off') + '"><div class="ic">' + (on ? a.emoji : '🔒') + '</div><b class="sm">' + a.title + '</b><div class="tiny muted">' + a.desc + '</div></div>'; }).join('') + '</div>' +
       '<div class="row between"><h2>Estatísticas 📊</h2><button class="link" data-a="tab:calendar">📅 Calendário</button></div>' +
-      '<div class="card"><b class="sm">Treinos por semana</b>' + barChart(wv, wl, 300, 110) + '</div><div class="card"><b class="sm">Cardios por semana</b>' + barChart(cv, wl, 300, 110) + '</div><div class="card"><b class="sm">Água por dia (L)</b>' + barChart(wat, dates.map(function (d, i) { return String(i + 1); }), 300, 110) + '</div>' +
-      '<div class="card"><b class="sm">Pontuação acumulada</b>' + lineChart(cum, false, 300, 100) + '</div><div class="card"><b class="sm">Evolução no ranking</b>' + lineChart(posv, true, 300, 100) + '<div class="tiny muted">Topo = 1º lugar · hoje #' + pos + '</div></div>' +
+      '<div class="card"><b class="sm">Treinos por semana</b>' + barChart(wv, wl, 300, 120, { goal: c.rules.workoutsPerWeek, nd: nw }) + '</div><div class="card"><b class="sm">Cardios por semana</b>' + barChart(cv, wl, 300, 120, { goal: c.rules.cardioPerWeek, nd: nw }) + '</div><div class="card"><b class="sm">Água por dia (L)</b>' + barChart(wat, allDates.map(function (d, i) { return (i === 0 || (i + 1) % 5 === 0) ? String(i + 1) : ''; }), 300, 120, { goal: Math.round(c.rules.waterGoalMl / 100) / 10, nd: nd }) + '</div>' +
+      '<div class="card"><b class="sm">Pontuação acumulada</b>' + lineChart(cum, false, 300, 110, c.durationDays) + '</div><div class="card"><b class="sm">Evolução no ranking</b>' + lineChart(posv, true, 300, 110, c.durationDays) + '<div class="tiny muted">Topo = 1º lugar · hoje #' + pos + '</div></div>' +
       '<h2>Histórico</h2>' + (hist.length ? hist.map(function (h) { return '<div class="card row between" style="padding:12px 14px"><div><b class="sm">' + h.t + '</b><div class="tiny muted">' + formatBR(h.date) + '</div></div><button class="link bad" data-a="del:' + h.col + ':' + h.id + '">' + (ui.confirm === 'del:' + h.id ? 'Confirmar' : 'Excluir') + '</button></div>'; }).join('') : '<p class="muted sm">Sem registros ainda.</p>');
   }
   var th = lsGet('d30-theme') || 'dark';
