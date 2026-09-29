@@ -110,6 +110,10 @@ nav{position:fixed;left:0.75rem;right:0.75rem;bottom:calc(0.625rem + env(safe-ar
 .cmt{background:var(--card2);border-radius:0.75rem;padding:0.5rem 0.75rem;margin-top:0.5rem}
 svg text{fill:var(--muted);font-size:0.5625rem;font-family:var(--f-body)}
 .note{font-size:.75rem;color:var(--muted);text-align:center;margin-top:1.25rem}
+.agrid{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem}
+.ab{font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:1rem;padding:.8rem .3rem;text-align:center;cursor:pointer;min-width:0}
+.ab .ic{display:block;font-size:1.9rem;line-height:1.2} .ab b{display:block;font-size:.68rem;line-height:1.2;margin-top:.3rem;overflow-wrap:anywhere}
+.ab.off{opacity:.42} .ab.off .ic{filter:grayscale(1)} .ab.sel{outline:2px solid var(--rose);opacity:1}
 /* barra de filtros com setas */
 .chipbar{position:relative} .chipbar .chips{scroll-behavior:auto;padding-inline:2px}
 .chipbar .arr{position:absolute;top:0;z-index:2;width:2.375rem;height:2.625rem;border:0;font:inherit;font-size:1.6rem;font-weight:800;color:var(--fg);cursor:pointer;display:flex;align-items:center;padding:0 0.375rem}
@@ -449,7 +453,7 @@ var firebaseConfig = {
 };
 var auth = null, db = null, $app = null, TODAY = todayISO();
 var S = { ready: false, user: null, profile: null, groups: [], gid: null, users: {}, workouts: [], cardios: [], days: [], acts: [] };
-var ui = { tab: (['home', 'ranking', 'register', 'group', 'profile', 'calendar'].indexOf(lsGet('d30-tab')) >= 0 ? lsGet('d30-tab') : 'home'), mode: 'login', f: {}, filter: 'geral', day: TODAY, wType: 'musculacao', cType: 'caminhada', open: null, toast: '', busy: false, err: '', photo: '', wPhoto: '', sub: '', wk: null, confirm: '', pendingProfile: null };
+var ui = { tab: (['home', 'ranking', 'register', 'group', 'profile', 'calendar'].indexOf(lsGet('d30-tab')) >= 0 ? lsGet('d30-tab') : 'home'), mode: 'login', f: {}, filter: 'geral', day: TODAY, wType: 'musculacao', cType: 'caminhada', open: null, toast: '', busy: false, err: '', photo: '', ach: '', wPhoto: '', sub: '', wk: null, confirm: '', pendingProfile: null };
 var userUnsubs = [], groupUnsubs = [], attachedGid = null;
 
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -898,7 +902,7 @@ V.profile = function () {
     var hist = S.workouts.filter(function (x) { return x.userId === me(); }).map(function (x) { return { id: x.id, col: 'workouts', date: x.date, t: '🏋️ Treino' }; }).concat(S.cardios.filter(function (x) { return x.userId === me(); }).map(function (x) { return { id: x.id, col: 'cardios', date: x.date, t: '🏃 Cardio · ' + x.minutes + ' min' }; })).sort(function (a, b) { return b.date < a.date ? -1 : 1; }).slice(0, 12);
     html += '<div class="grid3" style="margin-top:14px"><div class="card center" style="margin:0"><div class="disp" style="font-size:1.4rem;font-weight:800">#' + pos + '</div><div class="tiny muted">Posição</div></div><div class="card center" style="margin:0"><div class="disp" style="font-size:1.4rem;font-weight:800">' + mine.points + '</div><div class="tiny muted">Pontos</div></div><div class="card center" style="margin:0"><div class="disp" style="font-size:1.4rem;font-weight:800">🔥' + mine.streak + '</div><div class="tiny muted">Sequência</div></div></div>' +
       '<div class="card" style="margin-top:12px"><p>🏋️ Treinos: <b>' + mine.workoutsTotal + '</b></p><p>🏃 Cardios (≥' + c.rules.cardioMinMinutes + ' min): <b>' + mine.cardioTotal + '</b></p><p>💧 Dias de água: <b>' + mine.waterDays + '</b></p><p>🍫 Dias sem doce: <b>' + mine.sweetsDays + '</b> · maior seq. ' + mine.bestSweetsStreak + '</p><p>🍺 Dias sem álcool: <b>' + mine.alcoholDays + '</b> · maior seq. ' + mine.bestAlcoholStreak + '</p></div>' +
-      '<div class="row between"><h2>Minhas conquistas 🏅</h2><span class="sm muted">' + got.length + '/' + ACHIEVEMENTS.length + '</span></div><div class="grid2">' + ACHIEVEMENTS.map(function (a) { var on = got.indexOf(a.id) >= 0; return '<div class="card ach' + (on ? '' : ' off') + '"><div class="ic">' + (on ? a.emoji : '🔒') + '</div><b class="sm">' + a.title + '</b><div class="tiny muted">' + a.desc + '</div></div>'; }).join('') + '</div>' +
+      '<div class="row between"><h2>Minhas conquistas 🏅</h2><span class="sm muted">' + got.length + '/' + ACHIEVEMENTS.length + '</span></div><div class="agrid">' + ACHIEVEMENTS.slice().sort(function (a, b) { return (got.indexOf(b.id) >= 0) - (got.indexOf(a.id) >= 0); }).map(function (a) { var on = got.indexOf(a.id) >= 0; return '<button class="ab' + (on ? '' : ' off') + (ui.ach === a.id ? ' sel' : '') + '" data-a="ach:' + a.id + '"><span class="ic">' + a.emoji + '</span><b>' + a.title + '</b></button>'; }).join('') + '</div>' + (ui.ach ? (function () { var a = ACHIEVEMENTS.filter(function (x) { return x.id === ui.ach; })[0]; return a ? '<div class="card" style="margin-top:12px"><b>' + a.emoji + ' ' + a.title + '</b><div class="sm muted">' + a.desc + '</div><div class="sm ' + (got.indexOf(a.id) >= 0 ? 'ok' : 'muted') + '" style="margin-top:6px">' + (got.indexOf(a.id) >= 0 ? '✅ Conquistada!' : '🔒 Ainda não conquistada') + '</div></div>' : ''; })() : '') +
       '<div class="row between"><h2>Estatísticas 📊</h2><button class="link" data-a="tab:calendar">📅 Calendário</button></div>' +
       '<div class="card"><b class="sm">Treinos por semana</b>' + barChart(wv, wl, 300, 120, { goal: c.rules.workoutsPerWeek, nd: nw }) + '</div><div class="card"><b class="sm">Cardios por semana</b>' + barChart(cv, wl, 300, 120, { goal: c.rules.cardioPerWeek, nd: nw }) + '</div><div class="card"><b class="sm">Água por dia (L)</b>' + barChart(wat, allDates.map(function (d, i) { return (i === 0 || (i + 1) % 5 === 0) ? String(i + 1) : ''; }), 300, 120, { goal: Math.round(c.rules.waterGoalMl / 100) / 10, nd: nd }) + '</div>' +
       '<div class="card"><b class="sm">Pontuação acumulada</b>' + lineChart(cum, false, 300, 110, c.durationDays) + '</div><div class="card"><b class="sm">Evolução no ranking</b>' + lineChart(posv, true, 300, 110, c.durationDays) + '<div class="tiny muted">Topo = 1º lugar · hoje #' + pos + '</div></div>' +
@@ -978,6 +982,7 @@ document.addEventListener('click', function (e) {
   else if (a === 'wk') { ui.wk = parseInt(p[1], 10); render(); }
   else if (a === 'tg') { var tf = p[2], cv = (myLog(p[1]) || {})[tf], o2 = {}; o2[tf] = cv === undefined ? true : cv === true ? false : firebase.firestore.FieldValue.delete(); setLog(p[1], o2); }
   else if (a === 'reload') location.reload();
+  else if (a === 'ach') { ui.ach = ui.ach === p[1] ? '' : p[1]; render(); }
   else if (a === 'saveW') addWorkout(); else if (a === 'saveC') addCardio();
   else if (a === 'w') addWater(parseInt(p[1], 10));
   else if (a === 'hab') setLog(TODAY, (function () { var o = {}; o[p[1]] = p[2] === '1'; return o; })());
