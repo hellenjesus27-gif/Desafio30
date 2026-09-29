@@ -532,6 +532,7 @@ function addWater(ml) {
 }
 var WT = { musculacao: '🏋️ Musculação', funcional: '🤸 Funcional', crossfit: '🔱 Crossfit', pilates: '🧘 Pilates', corrida: '🏃 Corrida', natacao: '🏊 Natação', danca: '💃 Dança', esporte: '⚽ Esporte', outro: '✨ Outro' };
 function addWorkout() {
+  if (S.workouts.some(function (x) { return x.userId === me() && x.date === TODAY; })) return say('Você já registrou o treino de hoje ✅');
   if (!ui.wPhoto) return say('Tire uma foto do treino 📸 (obrigatória)');
   var r = rules(), before = computeUserStats(me(), data(), challenge(), TODAY), n = before.workoutsThisWeek + 1, photo = ui.wPhoto;
   var aref = grp().collection('activities').doc();
@@ -542,6 +543,7 @@ function addWorkout() {
   say(n >= r.workoutBonusAt ? '⭐ Meta + bônus! ' + n + ' treinos' : n >= r.workoutsPerWeek ? '🟢 Meta cumprida! ' + n + ' treinos' : 'Treino registrado ✅ ' + n + '/' + r.workoutsPerWeek);
 }
 function addCardio() {
+  if (S.cardios.some(function (x) { return x.userId === me() && x.date === TODAY && x.minutes >= rules().cardioMinMinutes; })) return say('Você já registrou o cardio de hoje ✅');
   var r = rules(), m = parseInt(ui.f.cmin || '30', 10), t = ui.f.ctime || '07:00';
   if (!m || m <= 0) return say('Informe a duração em minutos');
   if (!/^([01]?\d|2[0-3]):[0-5]\d$/.test(t)) return say('Horário no formato HH:MM');
@@ -770,17 +772,18 @@ function weekChecklist() {
 }
 V.register = function () {
   var g = curGroup(); if (!g) return V.empty();
-  var r = rules(), mine = statsAll().filter(function (s) { return s.userId === me(); })[0], log = myLog(TODAY) || {}, water = log.waterMl || 0;
+  var r = rules(), mine = statsAll().filter(function (s) { return s.userId === me(); })[0], log = myLog(TODAY) || {}, water = log.waterMl || 0,
+    doneW = S.workouts.some(function (x) { return x.userId === me() && x.date === TODAY; }), doneC = S.cardios.some(function (x) { return x.userId === me() && x.date === TODAY && x.minutes >= r.cardioMinMinutes; });
   var W = { musculacao: '🏋️ Musculação', funcional: '🤸 Funcional', crossfit: '🔱 Crossfit', pilates: '🧘 Pilates', corrida: '🏃 Corrida', natacao: '🏊 Natação', danca: '💃 Dança', esporte: '⚽ Esporte', outro: '✨ Outro' };
   var C = { caminhada: '🚶 Caminhada', corrida: '🏃 Corrida', bicicleta: '🚴 Bicicleta', escada: '🪜 Escada', transport: '🚋 Transport', eliptico: '🌀 Elíptico', outro: '✨ Outro' };
   var hab = function (f, streak, best, unit) {
     var v = log[f]; return '<div class="card"><b class="disp">🔥 ' + streak + ' ' + (streak === 1 ? 'dia' : 'dias') + ' ' + unit + '</b><div class="sm muted">Maior sequência: ' + best + '</div><div class="seg"><button class="' + (v === true ? 'yes' : '') + '" data-a="hab:' + f + ':1">✅ Cumpri</button><button class="' + (v === false ? 'no' : '') + '" data-a="hab:' + f + ':0">❌ Não cumpri</button></div></div>';
   };
   return '<h1>Registrar</h1><p class="muted">Tudo em um só lugar · hoje</p>' + dayChecklist() +
-    '<h2>🏋️ Treino <span class="sm muted">· semana ' + mine.workoutsThisWeek + '/' + r.workoutsPerWeek + (mine.workoutStatus === 'bonus' ? ' ⭐' : '') + '</span></h2><div class="card"><div class="chips w">' + Object.keys(W).map(function (k) { return chip(W[k], ui.wType === k, 'wt:' + k); }).join('') + '</div>' + photoPicker() + '<button class="btn" data-a="saveW" style="margin-top:8px">📸 Registrar treino</button></div>' +
+    '<h2>🏋️ Treino <span class="sm muted">· semana ' + mine.workoutsThisWeek + '/' + r.workoutsPerWeek + (mine.workoutStatus === 'bonus' ? ' ⭐' : '') + '</span></h2><div class="card"><div class="chips w">' + Object.keys(W).map(function (k) { return chip(W[k], ui.wType === k, 'wt:' + k); }).join('') + '</div>' + (doneW ? '<div class="ck ok" style="margin-top:10px">✅ Treino de hoje já registrado. Volte amanhã! (Para corrigir, apague em Perfil → Histórico.)</div>' : photoPicker() + '<button class="btn" data-a="saveW" style="margin-top:8px">📸 Registrar treino</button>') + '</div>' +
     '<h2>🏃 Cardio <span class="sm muted">· semana ' + mine.cardioThisWeek + '/' + r.cardioPerWeek + '</span></h2><div class="card"><div class="chips w">' + Object.keys(C).map(function (k) { return chip(C[k], ui.cType === k, 'ct:' + k); }).join('') + '</div>' +
-    '<div class="grid2" style="margin-top:6px">' + field('cmin', 'DURAÇÃO (MIN)', 'inputmode="numeric" placeholder="30"') + field('ctime', 'HORÁRIO', 'placeholder="07:30"') + '</div>' + field('cnote', 'OBSERVAÇÃO (OPCIONAL)', 'placeholder="Como foi?"') +
-    '<button class="btn" data-a="saveC" style="margin-top:0">Registrar cardio</button><div class="tiny muted center" style="margin-top:8px">Mínimo de ' + r.cardioMinMinutes + ' min para pontuar</div></div>' +
+    (doneC ? '<div class="ck ok" style="margin-top:10px">✅ Cardio de hoje já registrado. Volte amanhã! (Para corrigir, apague em Perfil → Histórico.)</div></div>' : '<div class="grid2" style="margin-top:6px">' + field('cmin', 'DURAÇÃO (MIN)', 'inputmode="numeric" placeholder="30"') + field('ctime', 'HORÁRIO', 'placeholder="07:30"') + '</div>' + field('cnote', 'OBSERVAÇÃO (OPCIONAL)', 'placeholder="Como foi?"') +
+    '<button class="btn" data-a="saveC" style="margin-top:0">Registrar cardio</button><div class="tiny muted center" style="margin-top:8px">Mínimo de ' + r.cardioMinMinutes + ' min para pontuar</div></div>') +
     '<h2>💧 Água</h2><div class="card"><div class="row">' + ring(pct(water, r.waterGoalMl), 96, 9, water >= r.waterGoalMl ? 'var(--ok)' : 'var(--rose)', '<b class="disp">' + fmtL(water) + ' L</b><span class="tiny muted">de ' + fmtL(r.waterGoalMl) + ' L</span>') + '<div class="grow">' + (water >= r.waterGoalMl ? '<b class="ok">💧 META CONCLUÍDA!</b>' : '<div class="muted sm">Faltam ' + (r.waterGoalMl - water) + ' ml</div>') + '</div></div>' +
     '<div class="chips w" style="margin-top:12px">' + [250, 500, 750, 1000].map(function (ml) { return chip(ml >= 1000 ? '+1 L' : '+' + ml + ' ml', false, 'w:' + ml); }).join('') + chip('↩︎ −250', false, 'w:-250') + chip('Zerar', false, 'w:0') + '</div></div>' +
     '<h2>🍫 Zero doce</h2>' + hab('noSweets', mine.sweetsStreak, mine.bestSweetsStreak, 'sem doce') + '<h2>🍺 Zero álcool</h2>' + hab('noAlcohol', mine.alcoholStreak, mine.bestAlcoholStreak, 'sem álcool') + weekChecklist();
