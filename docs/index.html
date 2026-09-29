@@ -109,6 +109,11 @@ nav{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-b
 .cmt{background:var(--card2);border-radius:12px;padding:8px 12px;margin-top:8px}
 svg text{fill:var(--muted);font-size:9px;font-family:var(--f-body)}
 .note{font-size:.75rem;color:var(--muted);text-align:center;margin-top:20px}
+/* barra de filtros com setas */
+.chipbar{position:relative} .chipbar .chips{scroll-behavior:auto;padding-inline:2px}
+.chipbar .arr{position:absolute;top:0;z-index:2;width:38px;height:42px;border:0;font:inherit;font-size:1.6rem;font-weight:800;color:var(--fg);cursor:pointer;display:flex;align-items:center;padding:0 6px}
+.chipbar .arr.l{left:0;justify-content:flex-start;background:linear-gradient(90deg,var(--bg) 40%,transparent)} .chipbar .arr.r{right:0;justify-content:flex-end;background:linear-gradient(270deg,var(--bg) 40%,transparent)}
+.chipbar .arr.off{opacity:0;pointer-events:none}
 /* foto do treino, checklists */
 .pbtn{position:relative;display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:16px;background:var(--rose2);color:var(--on-rose);font-weight:800;cursor:pointer;overflow:hidden;text-align:center} .pbtn.sec{background:var(--card2);color:var(--fg)}
 .pbtn input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px}
@@ -725,7 +730,7 @@ V.ranking = function () {
     var p = function (x, cls) { return '<div class="pod ' + cls + '"><span style="font-size:1.4rem">' + med[x.position] + '</span>' + av(x.userId, cls === 'p1' ? 64 : 52) + '<div class="nm">' + esc(nm(x.userId)) + '</div><div class="base">' + x.value + '</div></div>'; };
     pod = '<div class="podium">' + p(rank[1], 'p2') + p(rank[0], 'p1') + p(rank[2], 'p3') + '</div>';
   }
-  return '<h1>Ranking 🏆</h1><div class="chips" style="margin-top:12px">' + F.map(function (f) { return chip(f[1], ui.filter === f[0], 'filter:' + f[0]); }).join('') + '</div>' +
+  return '<h1>Ranking 🏆</h1><div class="chipbar" style="margin-top:12px"><button class="arr l" data-a="cs:-1" aria-label="Anterior">‹</button><div class="chips">' + F.map(function (f) { return chip(f[1], ui.filter === f[0], 'filter:' + f[0]); }).join('') + '</div><button class="arr r" data-a="cs:1" aria-label="Próximo">›</button></div>' +
     (mine ? '<div class="hero" style="padding:14px 18px;margin-bottom:14px"><div class="row between"><div><div class="tiny" style="font-weight:800;letter-spacing:.1em">VOCÊ — #' + mine.position + '</div><div class="disp" style="font-size:1.6rem;font-weight:800">' + mine.value + ' pontos</div></div>' + av(me(), 44) + '</div></div>' : '') + pod +
     rank.map(function (x) {
       var isMe = x.userId === me();
@@ -874,6 +879,18 @@ V.profile = function () {
 var TABS = [['home', '🏠', 'Início'], ['ranking', '🏆', 'Ranking'], ['register', '＋', 'Registrar'], ['group', '👥', 'Grupo'], ['profile', '👤', 'Perfil']];
 function applyTheme() { var t = lsGet('d30-theme') || 'dark', el = document.documentElement; if (t === 'auto') el.removeAttribute('data-theme'); else el.setAttribute('data-theme', t); }
 
+function updArrows(bar) {
+  var c = bar.querySelector('.chips'), l = bar.querySelector('.arr.l'), r = bar.querySelector('.arr.r'); if (!c) return;
+  l.classList.toggle('off', c.scrollLeft < 8); r.classList.toggle('off', c.scrollLeft + c.clientWidth >= c.scrollWidth - 8);
+}
+function fixBars(center) {
+  [].forEach.call(document.querySelectorAll('.chipbar'), function (bar) {
+    var c = bar.querySelector('.chips'), on = c && c.querySelector('.chip.on');
+    if (center && on) c.scrollLeft = Math.max(0, on.offsetLeft - (c.clientWidth - on.offsetWidth) / 2);
+    updArrows(bar);
+  });
+}
+document.addEventListener('scroll', function (e) { var t = e.target; if (t && t.classList && t.classList.contains('chips') && t.parentNode) updArrows(t.parentNode); }, true);
 var rendering = false, renderQ = 0, lastHtml = '';
 function render() { if (renderQ) return; renderQ = requestAnimationFrame(function () { renderQ = 0; doRender(); }); }
 function navHtml() { return '<nav>' + TABS.map(function (t) { return '<button class="tab' + (ui.tab === t[0] ? ' on' : '') + (t[0] === 'register' ? ' plus' : '') + '" data-a="tab:' + t[0] + '"><span class="e">' + t[1] + '</span><small>' + t[2] + '</small></button>'; }).join('') + '</nav>'; }
@@ -881,6 +898,7 @@ function doRender() {
   if (!$app || rendering) return; rendering = true;
   try {
     TODAY = todayISO(); applyTheme();
+    var chipScroll = [].map.call(document.querySelectorAll('.chips'), function (e) { return e.scrollLeft; });
     var a = document.activeElement, focusId = a && a.id && a.tagName === 'INPUT' && a.type !== 'file' ? a.id : null, ss = 0, y = window.scrollY, body = '';
     try { ss = focusId ? a.selectionStart : 0; } catch (e) { ss = 0; }
     if (!S.ready) body = '<div class="busy"><div class="spin"></div></div>';
@@ -894,6 +912,8 @@ function doRender() {
     var html = body + (ui.busy ? '<div class="busy"><div class="spin"></div></div>' : '') + (ui.toast ? '<div class="toast">' + esc(ui.toast) + '</div>' : '');
     if (html !== lastHtml) {
       lastHtml = html; $app.innerHTML = html;
+      [].forEach.call(document.querySelectorAll('.chips'), function (e, i) { if (chipScroll[i]) e.scrollLeft = chipScroll[i]; });
+      fixBars(ui.centerOn); ui.centerOn = false;
       if (focusId) { var n = document.getElementById(focusId); if (n) { n.focus(); try { n.setSelectionRange(ss, ss); } catch (e) {} } }
       window.scrollTo(0, y);
     }
@@ -915,7 +935,8 @@ document.addEventListener('click', function (e) {
   if (a === 'tab') { ui.tab = p[1]; lsSet('d30-tab', p[1]); ui.sub = ''; ui.confirm = ''; window.scrollTo(0, 0); render(); }
   else if (a === 'mode') { ui.mode = p[1]; ui.err = ''; render(); }
   else if (a === 'login') doLogin(); else if (a === 'register') doRegister(); else if (a === 'google') doGoogle(); else if (a === 'reset') doReset();
-  else if (a === 'filter') { ui.filter = p[1]; render(); }
+  else if (a === 'filter') { ui.filter = p[1]; ui.centerOn = true; render(); }
+  else if (a === 'cs') { var bc = el.parentNode.querySelector('.chips'); if (bc) bc.scrollBy({ left: parseInt(p[1], 10) * 170, behavior: 'smooth' }); }
   else if (a === 'day') { ui.day = p[1]; render(); }
   else if (a === 'wt') { ui.wType = p[1]; render(); } else if (a === 'ct') { ui.cType = p[1]; render(); }
   else if (a === 'sub') { ui.sub = p[1] || ''; ui.confirm = ''; window.scrollTo(0, 0); render(); }
