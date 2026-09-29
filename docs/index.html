@@ -10,6 +10,8 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Desafio 30">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -108,6 +110,9 @@ nav{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-b
 svg text{fill:var(--muted);font-size:9px;font-family:var(--f-body)}
 .note{font-size:.75rem;color:var(--muted);text-align:center;margin-top:20px}
 /* foto do treino, checklists */
+.pbtn{position:relative;display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:16px;background:var(--rose2);color:var(--on-rose);font-weight:800;cursor:pointer;overflow:hidden;text-align:center} .pbtn.sec{background:var(--card2);color:var(--fg)}
+.pbtn input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px}
+body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:30;pointer-events:none}
 .pick{display:block;cursor:pointer;margin-bottom:6px} .pickph{display:flex;flex-direction:column;align-items:center;gap:4px;padding:22px 12px;border:2px dashed var(--line);border-radius:18px;background:var(--card2);text-align:center}
 .proof{width:100%;max-height:420px;object-fit:cover;border-radius:16px;display:block;margin:0 0 10px}
 .tscroll{overflow-x:auto} .wkt{width:100%;border-collapse:collapse;font-size:.95rem} .wkt th,.wkt td{text-align:center;padding:6px 2px;border-bottom:1px solid var(--line)} .wkt .l{text-align:left;white-space:nowrap} .wkt tr.today td{background:rgba(242,167,189,.08)}
@@ -722,7 +727,9 @@ V.ranking = function () {
 };
 
 function photoPicker() {
-  return '<label for="photoW" class="pick">' + (ui.wPhoto ? '<img class="proof" src="' + ui.wPhoto + '" alt="Foto do treino"><div class="tiny muted center">Toque para trocar a foto</div>' : '<div class="pickph"><span style="font-size:2rem">📸</span><b>Foto do treino</b><span class="tiny muted">Obrigatória · toque para tirar ou escolher</span></div>') + '</label><input type="file" id="photoW" accept="image/*" hidden>';
+  var box = function (cls, cam, inner) { return '<label class="pbtn ' + cls + '">' + inner + '<input type="file" id="' + (cam ? 'photoW' : 'photoWg') + '" accept="image/*"' + (cam ? ' capture="environment"' : '') + '></label>'; };
+  return (ui.wPhoto ? '<img class="proof" src="' + ui.wPhoto + '" alt="Foto do treino"><div class="tiny muted center" style="margin-bottom:8px">Foto pronta ✅ Toque abaixo para trocar</div>' : '<div class="tiny muted center" style="margin:4px 0 8px">📸 Foto obrigatória para contar o treino</div>') +
+    '<div class="grid2">' + box('', true, '📷 Tirar foto') + box('sec', false, '🖼️ Galeria') + '</div>';
 }
 function dayChecklist() {
   var r = rules(), log = myLog(TODAY) || {}, w = S.workouts.filter(function (x) { return x.userId === me() && x.date === TODAY; }).length,
@@ -876,7 +883,7 @@ function render() {
 document.addEventListener('input', function (e) { var t = e.target; if (t && t.id && t.classList && t.classList.contains('i')) ui.f[t.id] = t.value; });
 document.addEventListener('change', function (e) {
   var t = e.target; if (!t || !t.files || !t.files[0]) return;
-  resizePhoto(t.files[0], function (url) { if (t.id === 'photoReg') { ui.photo = url; render(); } else if (t.id === 'photoProf') saveProfile({ photo: url }); else if (t.id === 'photoW') { ui.wPhoto = url; render(); } }, (t.id === 'photoW') ? 720 : 0);
+  resizePhoto(t.files[0], function (url) { if (t.id === 'photoReg') { ui.photo = url; render(); } else if (t.id === 'photoProf') saveProfile({ photo: url }); else if (t.id === 'photoW' || t.id === 'photoWg') { ui.wPhoto = url; render(); } }, (t.id === 'photoW' || t.id === 'photoWg') ? 720 : 0);
 });
 document.addEventListener('keydown', function (e) {
   if (e.key !== 'Enter' || !e.target || e.target.tagName !== 'INPUT') return; var id = e.target.id;
