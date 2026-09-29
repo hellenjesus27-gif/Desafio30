@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Desafio 30</title>
+<style>
+html{color-scheme:light}body{margin:0}
+:root{
+  /* Layout: app de celular, abas fixas embaixo. Cores tiradas da logo: preto, prata e rosa */
+  --bg:#f6f4f5; --card:#ffffff; --alt:#efeaed; --fg:#16141a; --muted:#6d6872; --line:#e3dde1;
+  --rose:#c4506f; --rose-fg:#ffffff; --ok:#1e9e5a; --bad:#d93a4a; --warn:#c98a0b; --gold:#b98a00;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#000000; --card:#111114; --alt:#1b1a1f; --fg:#f4f4f6; --muted:#9c99a5; --line:#26262c;
+  --rose:#e08ca5; --rose-fg:#1a0a10; --ok:#3ddc84; --bad:#ff5d6c; --warn:#f5b942; --gold:#f5c542; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#000000; --card:#111114; --alt:#1b1a1f; --fg:#f4f4f6; --muted:#9c99a5; --line:#26262c;
+  --rose:#e08ca5; --rose-fg:#1a0a10; --ok:#3ddc84; --bad:#ff5d6c; --warn:#f5b942; --gold:#f5c542; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.45;padding-inline:16px;padding-block:14px 96px}
+main{max-width:560px;margin-inline:auto}
+h1{font-size:1.5rem;margin:6px 0 2px;line-height:1.2}
+h2{font-size:1.1rem;margin:22px 0 10px}
+p{margin:4px 0}
+.muted{color:var(--muted)} .sm{font-size:.8rem} .rose{color:var(--rose)} .okc{color:var(--ok)} .center{text-align:center}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;min-width:0}
+.card.sm{padding:10px 14px}
+.card.hero{display:flex;justify-content:space-between;gap:10px;align-items:center;background:var(--alt);margin-top:14px}
+.card.me{border:2px solid var(--rose)} .card.c{text-align:center} .card.off{opacity:.45}
+.rosebg{background:var(--rose);color:var(--rose-fg);border:0}
+.lbl{font-size:.72rem;font-weight:700;color:var(--muted);letter-spacing:.04em}
+.big{font-size:1.7rem;font-weight:800;line-height:1.2} .v{font-size:1.25rem;font-weight:800;margin-top:2px} .pts{font-size:1.15rem;font-weight:800}
+.r{text-align:right} .ic{font-size:2rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px} .grid .card{margin:0}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap} .grow{flex:1;min-width:0}
+.bar{height:8px;background:var(--alt);border-radius:4px;overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;background:var(--rose);border-radius:4px} .bar i.ok{background:var(--ok)} .bar i.bad{background:var(--bad)} .bar i.gold{background:var(--gold)} .bar i.warn{background:var(--warn)}
+.pill{display:inline-block;font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:99px;background:var(--alt)}
+.pill.ok{color:var(--ok)} .pill.bad{color:var(--bad)} .pill.gold{color:var(--gold)}
+.pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-block:4px 10px} .chips.wrap{flex-wrap:wrap;overflow:visible;margin-block:10px}
+.chip{font:inherit;font-weight:600;font-size:.85rem;padding:9px 14px;border-radius:99px;border:1px solid var(--line);background:var(--alt);color:var(--fg);white-space:nowrap;min-height:40px}
+.chip.on{background:var(--rose);color:var(--rose-fg);border-color:var(--rose)}
+.btn{display:block;width:100%;font:inherit;font-weight:700;padding:13px;border-radius:99px;border:0;background:var(--rose);color:var(--rose-fg);min-height:48px;margin-top:8px}
+.btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line);margin-top:20px}
+.big-btn{font:inherit;font-weight:700;padding:14px;border-radius:14px;border:0;background:var(--alt);color:var(--fg);min-height:48px}
+.big-btn.okb{background:var(--ok);color:#fff} .big-btn.badb{background:var(--bad);color:#fff}
+label{display:block;font-size:.78rem;font-weight:600;color:var(--muted)}
+input{width:100%;margin-top:5px;font:inherit;font-size:16px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--alt);color:var(--fg)}
+.av{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:var(--rose);color:var(--rose-fg);font-weight:800;flex:none} .av.xl{width:88px;height:88px;font-size:2rem}
+.medal{font-size:1.5rem;width:42px;text-align:center;flex:none}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:12px}
+.cell{aspect-ratio:1;border:2px solid transparent;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font:inherit;color:#0b0b0b;padding:0}
+.cell small{font-size:.6rem;opacity:.8} .cell.full{background:var(--ok)} .cell.partial{background:var(--warn)} .cell.none{background:var(--bad)} .cell.fut{background:var(--alt);color:var(--muted)} .cell.sel{border-color:var(--fg)}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-around;background:var(--card);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px))}
+.tab{flex:1;border:0;background:none;color:var(--muted);font:inherit;display:flex;flex-direction:column;align-items:center;gap:1px;min-height:48px}
+.tab span{font-size:1.3rem;line-height:1} .tab small{font-size:.65rem;font-weight:700} .tab.on{color:var(--rose)}
+.tab.plus span{background:var(--rose);color:var(--rose-fg);width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-top:-14px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:99px;font-weight:600;max-width:90vw;z-index:5}
+.logo{display:block;width:96px;height:96px;margin:0 auto 4px;border-radius:50%}
+button:focus-visible,input:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
+.note{font-size:.75rem;color:var(--muted);text-align:center;margin-top:18px}
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+<script>
+const MS_DAY = 86400000;
+function toISO(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+function todayISO(now = new Date()) {
+    return toISO(now);
+}
+/** Número de dias (UTC) de uma data ISO — evita problemas de fuso/horário de verão. */
+function dayNumber(date) {
+    const [y, m, d] = date.split('-').map(Number);
+    return Math.floor(Date.UTC(y, m - 1, d) / MS_DAY);
+}
+function addDays(date, n) {
+    const [y, m, d] = date.split('-').map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d + n));
+    return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+}
+/** Índice do dia dentro do desafio (0 = primeiro dia). */
+function dayIndex(start, date) {
+    return dayNumber(date) - dayNumber(start);
+}
+/** Semana do desafio (0-based): dias 0-6 = semana 0, etc. */
+function weekIndex(start, date) {
+    return Math.floor(dayIndex(start, date) / 7);
+}
+function formatBR(date) {
+    const [y, m, d] = date.split('-');
+    return `${d}/${m}/${y}`;
+}
+function weekdayShort(date) {
+    const [y, m, d] = date.split('-').map(Number);
+    return ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'][new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+}
+
+
+const DEFAULT_RULES = {
+    workoutsPerWeek: 4,
+    workoutBonusAt: 5,
+    cardioPerWeek: 3,
+    cardioMinMinutes: 30,
+    waterGoalMl: 3000,
+    points: { workout: 10, workoutBonus: 5, cardio: 5, water: 5, noSweets: 5, noAlcohol: 5 },
+};
+/** Status do mínimo semanal de treino. */
+function workoutStatus(count, rules) {
+    if (count >= rules.workoutBonusAt)
+        return 'bonus';
+    if (count >= rules.workoutsPerWeek)
+        return 'met';
+    return 'below';
+}
+/** Pontos de treino de UMA semana: 10 por treino + bônus (uma vez) ao atingir o 5º. */
+function weekWorkoutPoints(count, rules) {
+    const bonus = count >= rules.workoutBonusAt ? rules.points.workoutBonus : 0;
+    return count * rules.points.workout + bonus;
+}
+function groupWeeks(items, start) {
+    const map = new Map();
+    for (const it of items) {
+        const w = weekIndex(start, it.date);
+        if (w < 0)
+            continue;
+        if (!map.has(w))
+            map.set(w, []);
+        map.get(w).push(it);
+    }
+    return map;
+}
+function dayPoints(log, rules) {
+    const water = log && log.waterMl >= rules.waterGoalMl ? rules.points.water : 0;
+    const sweets = log?.noSweets === true ? rules.points.noSweets : 0;
+    const alcohol = log?.noAlcohol === true ? rules.points.noAlcohol : 0;
+    return { water, sweets, alcohol, total: water + sweets + alcohol };
+}
+/** Sequência atual e maior sequência de um campo booleano. Hoje sem registro não quebra a sequência. */
+function streaks(days, field, today) {
+    const map = new Map(days.map((d) => [d.date, d[field]]));
+    const dates = [...map.keys()].sort();
+    let best = 0;
+    let run = 0;
+    let prev = null;
+    for (const d of dates) {
+        if (map.get(d) === true) {
+            run = prev && addDays(prev, 1) === d && run > 0 ? run + 1 : 1;
+            prev = d;
+            best = Math.max(best, run);
+        }
+        else {
+            run = 0;
+            prev = null;
+        }
+    }
+    let current = 0;
+    let cursor = today;
+    if (map.get(cursor) === undefined || map.get(cursor) === null)
+        cursor = addDays(cursor, -1);
+    while (map.get(cursor) === true) {
+        current++;
+        cursor = addDays(cursor, -1);
+    }
+    return { current, best };
+}
+/** Dias seguidos com TUDO cumprido (água + doce + álcool). */
+function perfectStreak(days, rules, today) {
+    const ok = (d) => !!d && d.waterMl >= rules.waterGoalMl && d.noSweets === true && d.noAlcohol === true;
+    const map = new Map(days.map((d) => [d.date, d]));
+    let cursor = today;
+    if (!map.has(cursor) || !ok(map.get(cursor))) {
+        // hoje ainda pode estar incompleto: começa de ontem
+        if (!ok(map.get(cursor)))
+            cursor = addDays(cursor, -1);
+    }
+    let n = 0;
+    while (ok(map.get(cursor))) {
+        n++;
+        cursor = addDays(cursor, -1);
+    }
+    return n;
+}
+function computeUserStats(userId, data, challenge, today) {
+    const { rules, startDate } = challenge;
+    const workouts = data.workouts.filter((w) => w.userId === userId);
+    const cardios = data.cardios.filter((c) => c.userId === userId);
+    const days = data.days.filter((d) => d.userId === userId);
+    const wWeeks = groupWeeks(workouts, startDate);
+    let workoutPoints = 0;
+    wWeeks.forEach((list) => (workoutPoints += weekWorkoutPoints(list.length, rules)));
+    const validCardios = cardios.filter((c) => c.minutes >= rules.cardioMinMinutes);
+    const cardioPoints = validCardios.length * rules.points.cardio;
+    let waterDays = 0, sweetsDays = 0, alcoholDays = 0, disciplinePoints = 0, waterPoints = 0;
+    for (const d of days) {
+        const p = dayPoints(d, rules);
+        if (p.water)
+            waterDays++;
+        if (d.noSweets === true)
+            sweetsDays++;
+        if (d.noAlcohol === true)
+            alcoholDays++;
+        waterPoints += p.water;
+        disciplinePoints += p.sweets + p.alcohol;
+    }
+    const currentWeek = weekIndex(startDate, today);
+    const workoutsThisWeek = (wWeeks.get(currentWeek) ?? []).length;
+    const cardioThisWeek = (groupWeeks(validCardios, startDate).get(currentWeek) ?? []).length;
+    let weekPoints = weekWorkoutPoints(workoutsThisWeek, rules) + cardioThisWeek * rules.points.cardio;
+    for (const d of days) {
+        if (weekIndex(startDate, d.date) === currentWeek) {
+            const p = dayPoints(d, rules);
+            weekPoints += p.total;
+        }
+    }
+    const todayWorkouts = workouts.filter((w) => w.date === today).length;
+    const todayCardios = validCardios.filter((c) => c.date === today).length;
+    const todayPoints = todayWorkouts * rules.points.workout +
+        todayCardios * rules.points.cardio +
+        dayPoints(days.find((d) => d.date === today), rules).total;
+    const sw = streaks(days, 'noSweets', today);
+    const al = streaks(days, 'noAlcohol', today);
+    let failedWeeks = 0;
+    for (let w = 0; w < currentWeek; w++) {
+        if ((wWeeks.get(w) ?? []).length < rules.workoutsPerWeek)
+            failedWeeks++;
+    }
+    return {
+        userId,
+        points: workoutPoints + cardioPoints + waterPoints + disciplinePoints,
+        weekPoints,
+        todayPoints,
+        workoutsTotal: workouts.length,
+        workoutPoints,
+        cardioTotal: validCardios.length,
+        cardioPoints,
+        waterDays,
+        waterPoints,
+        sweetsDays,
+        alcoholDays,
+        disciplinePoints,
+        sweetsStreak: sw.current,
+        alcoholStreak: al.current,
+        bestSweetsStreak: sw.best,
+        bestAlcoholStreak: al.best,
+        streak: perfectStreak(days, rules, today),
+        workoutsThisWeek,
+        cardioThisWeek,
+        workoutStatus: workoutStatus(workoutsThisWeek, rules),
+        cardioMet: cardioThisWeek >= rules.cardioPerWeek,
+        failedWeeks,
+    };
+}
+function sortKey(s, f) {
+    switch (f) {
+        case 'geral': return s.points;
+        case 'semana': return s.weekPoints;
+        case 'hoje': return s.todayPoints;
+        case 'treinos': return s.workoutPoints;
+        case 'cardio': return s.cardioPoints;
+        case 'agua': return s.waterPoints;
+        case 'disciplina': return s.disciplinePoints;
+    }
+}
+/** Ranking ordenado (desempate: pontos gerais, depois nome). Posições empatadas compartilham o mesmo número. */
+function buildRanking(stats, filter) {
+    const sorted = [...stats].sort((a, b) => sortKey(b, filter) - sortKey(a, filter) || b.points - a.points || a.userId.localeCompare(b.userId));
+    let pos = 0;
+    let lastVal = null;
+    return sorted.map((s, i) => {
+        const value = sortKey(s, filter);
+        if (value !== lastVal) {
+            pos = i + 1;
+            lastVal = value;
+        }
+        return { ...s, position: pos, value };
+    });
+}
+/** Status geral de um dia para o calendário. */
+function dayStatus(date, data, userId, rules) {
+    const log = data.days.find((d) => d.userId === userId && d.date === date);
+    const trained = data.workouts.some((w) => w.userId === userId && w.date === date);
+    const cardio = data.cardios.some((c) => c.userId === userId && c.date === date && c.minutes >= rules.cardioMinMinutes);
+    const water = !!log && log.waterMl >= rules.waterGoalMl;
+    const sweets = log?.noSweets === true;
+    const alcohol = log?.noAlcohol === true;
+    // Treino/cardio são metas semanais: o dia fica "cheio" com os 3 hábitos diários.
+    const daily = [water, sweets, alcohol].filter(Boolean).length;
+    if (daily === 3)
+        return 'full';
+    if (daily > 0 || trained || cardio)
+        return 'partial';
+    return 'none';
+}
+function challengeDayNumber(c, today) {
+    return Math.min(Math.max(dayIndex(c.startDate, today) + 1, 0), c.durationDays);
+}
+
+
+const ACHIEVEMENTS = [
+    { id: 'first', emoji: '🏆', title: 'Primeiro treino', desc: 'Registre seu primeiro treino' },
+    { id: 'streak7', emoji: '🔥', title: '7 dias seguidos', desc: '7 dias com todos os hábitos diários' },
+    { id: 'water7', emoji: '💧', title: '7 dias de água', desc: 'Bata 3 L em 7 dias' },
+    { id: 'sweets10', emoji: '🍫', title: '10 dias sem doce', desc: 'Sequência de 10 dias sem doce' },
+    { id: 'alcohol10', emoji: '🍺', title: '10 dias sem álcool', desc: 'Sequência de 10 dias sem álcool' },
+    { id: 'week5', emoji: '🏋️', title: '5 treinos na semana', desc: 'Faça 5 treinos em uma semana' },
+    { id: 'w20', emoji: '💪', title: '20 treinos', desc: 'Acumule 20 treinos' },
+    { id: 'leader', emoji: '👑', title: 'Líder do ranking', desc: 'Fique em 1º lugar' },
+    { id: 'complete', emoji: '🎖️', title: 'Desafio completo', desc: 'Termine todos os dias do desafio' },
+];
+function unlockedAchievements(userId, stats, data, challenge, position, ended) {
+    const out = [];
+    const workouts = data.workouts.filter((w) => w.userId === userId);
+    if (workouts.length >= 1)
+        out.push('first');
+    if (stats.streak >= 7)
+        out.push('streak7');
+    if (stats.waterDays >= 7)
+        out.push('water7');
+    if (stats.bestSweetsStreak >= 10)
+        out.push('sweets10');
+    if (stats.bestAlcoholStreak >= 10)
+        out.push('alcohol10');
+    // 5 treinos em qualquer semana
+    const perWeek = new Map();
+    for (const w of workouts) {
+        const wk = weekIndex(challenge.startDate, w.date);
+        perWeek.set(wk, (perWeek.get(wk) ?? 0) + 1);
+    }
+    if ([...perWeek.values()].some((n) => n >= challenge.rules.workoutBonusAt))
+        out.push('week5');
+    if (workouts.length >= 20)
+        out.push('w20');
+    if (position === 1 && stats.points > 0)
+        out.push('leader');
+    if (ended && stats.failedWeeks === 0)
+        out.push('complete');
+    return out;
+}
+
+
+
+/** Gerador pseudo-aleatório determinístico (dados de demonstração estáveis). */
+function rng(seed) {
+    let s = seed;
+    return () => {
+        s = (s * 1664525 + 1013904223) % 4294967296;
+        return s / 4294967296;
+    };
+}
+const DEMO_USER_ID = 'u-hellen';
+function buildSeed(today) {
+    const start = addDays(today, -11); // hoje = dia 12
+    const users = [
+        { id: DEMO_USER_ID, name: 'Hellen', email: 'demo@desafio30.app', isAdmin: true },
+        { id: 'u-camila', name: 'Camila', email: 'camila@demo.app' },
+        { id: 'u-giu', name: 'Giuli', email: 'giuli@demo.app' },
+        { id: 'u-rafa', name: 'Rafa', email: 'rafa@demo.app' },
+        { id: 'u-bia', name: 'Bia', email: 'bia@demo.app' },
+    ];
+    const challenge = {
+        id: 'c1', groupId: 'g1', name: 'Desafio 30', startDate: start, durationDays: 30,
+        status: 'active', rules: DEFAULT_RULES,
+    };
+    const group = {
+        id: 'g1', name: 'Turma do Desafio', inviteCode: 'D30-TURMA', adminId: DEMO_USER_ID,
+        memberIds: users.map((u) => u.id), challengeId: 'c1',
+    };
+    const workouts = [];
+    const cardios = [];
+    const days = [];
+    const types = ['musculacao', 'funcional', 'corrida', 'pilates', 'crossfit'];
+    // consistência por usuário (chance de cumprir cada hábito)
+    const profile = {
+        [DEMO_USER_ID]: { w: 0.62, c: 0.35, water: 0.75, s: 0.85, a: 0.9 },
+        'u-camila': { w: 0.75, c: 0.45, water: 0.85, s: 0.9, a: 0.95 },
+        'u-giu': { w: 0.55, c: 0.3, water: 0.7, s: 0.7, a: 0.85 },
+        'u-rafa': { w: 0.45, c: 0.25, water: 0.5, s: 0.6, a: 0.5 },
+        'u-bia': { w: 0.65, c: 0.4, water: 0.8, s: 0.8, a: 0.9 },
+    };
+    users.forEach((u, ui) => {
+        const r = rng(101 + ui * 17);
+        const p = profile[u.id];
+        for (let i = 0; i <= 11; i++) {
+            const date = addDays(start, i);
+            const isToday = date === today;
+            if (r() < p.w) {
+                workouts.push({ id: `w-${u.id}-${i}`, userId: u.id, date, type: types[Math.floor(r() * types.length)], minutes: 45 + Math.floor(r() * 30) });
+            }
+            if (r() < p.c) {
+                cardios.push({ id: `c-${u.id}-${i}`, userId: u.id, date, time: '07:00', type: 'caminhada', minutes: 30 + Math.floor(r() * 25) });
+            }
+            const water = r() < p.water ? 3000 + Math.floor(r() * 3) * 250 : 1500 + Math.floor(r() * 5) * 250;
+            days.push({
+                userId: u.id, date,
+                waterMl: isToday ? (u.id === DEMO_USER_ID ? 2400 : Math.min(water, 2500)) : water,
+                noSweets: isToday && u.id !== DEMO_USER_ID ? null : r() < p.s,
+                noAlcohol: isToday && u.id !== DEMO_USER_ID ? null : r() < p.a,
+            });
+        }
+    });
+    // Hellen: hoje com doce/álcool cumpridos
+    const hd = days.find((d) => d.userId === DEMO_USER_ID && d.date === today);
+    if (hd) {
+        hd.noSweets = true;
+        hd.noAlcohol = true;
+    }
+    const now = new Date().toISOString();
+    const activities = [
+        { id: 'a1', userId: 'u-camila', text: 'Camila completou 5 treinos essa semana 🔥', createdAt: now, reactions: [{ userId: DEMO_USER_ID, emoji: '🔥' }], comments: [] },
+        { id: 'a2', userId: 'u-bia', text: 'Bia bateu a meta de 3 L de água 💧', createdAt: now, reactions: [], comments: [] },
+        { id: 'a3', userId: 'u-rafa', text: 'Rafa fez 40 min de corrida 🏃', createdAt: now, reactions: [], comments: [] },
+    ];
+    return { users, challenge, group, workouts, cardios, days, activities };
+}
+
+/* ===== App (prévia web do Desafio 30) ===== */
+var KEY = 'd30-preview-v1';
+var $app = null;
+var TODAY = todayISO();
+var ui = { tab: 'home', filter: 'geral', day: TODAY, wType: 'musculacao', cType: 'caminhada', cMin: '30', cTime: '07:00', toast: '' };
+var db = load();
+
+function load() {
+  try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && s.day === TODAY) return s; } catch (e) {}
+  var sd = buildSeed(TODAY);
+  return { day: TODAY, users: sd.users, challenge: sd.challenge, workouts: sd.workouts, cardios: sd.cardios, days: sd.days, activities: sd.activities, dark: null };
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) {} }
+function reset() { try { localStorage.removeItem(KEY); } catch (e) {} db = load(); render(); }
+
+var ME = DEMO_USER_ID;
+function rules() { return db.challenge.rules; }
+function data() { return { workouts: db.workouts, cardios: db.cardios, days: db.days }; }
+function allStats() { return db.users.map(function (u) { return computeUserStats(u.id, data(), db.challenge, TODAY); }); }
+function userName(id) { var u = db.users.filter(function (x) { return x.id === id; })[0]; return u ? u.name : '?'; }
+function myLog(date) { return db.days.filter(function (d) { return d.userId === ME && d.date === date; })[0]; }
+function upsertDay(date, fn) {
+  var d = myLog(date);
+  if (!d) { d = { userId: ME, date: date, waterMl: 0, noSweets: null, noAlcohol: null }; db.days.push(d); }
+  fn(d); save(); render();
+}
+function post(text) { db.activities.unshift({ id: 'a' + Date.now(), userId: ME, text: text, createdAt: new Date().toISOString(), reactions: [], comments: [] }); }
+function say(msg) { ui.toast = msg; render(); setTimeout(function () { ui.toast = ''; render(); }, 2200); }
+function fmtL(ml) { return (ml / 1000).toFixed(1).replace('.', ','); }
+function pct(a, b) { return Math.max(0, Math.min(100, b ? a / b * 100 : 0)); }
+function bar(a, b, cls) { return '<div class="bar"><i class="' + (cls || '') + '" style="width:' + pct(a, b) + '%"></i></div>'; }
+function badge(status, n, r) {
+  if (status === 'bonus') return '<span class="pill gold">⭐ ' + n + '/' + r.workoutBonusAt + ' Meta + bônus</span>';
+  if (status === 'met') return '<span class="pill ok">🟢 ' + n + '/' + r.workoutsPerWeek + ' Meta cumprida</span>';
+  return '<span class="pill bad">🔴 ' + n + '/' + r.workoutsPerWeek + ' Mínimo semanal não cumprido</span>';
+}
+function chip(label, on, act) { return '<button class="chip' + (on ? ' on' : '') + '" data-a="' + act + '">' + label + '</button>'; }
+
+var V = {};
+V.home = function () {
+  var r = rules(), stats = allStats(), me = stats.filter(function (s) { return s.userId === ME; })[0];
+  var rank = buildRanking(stats, 'geral'), pos = rank.filter(function (x) { return x.userId === ME; })[0].position;
+  var dn = challengeDayNumber(db.challenge, TODAY), log = myLog(TODAY), water = log ? log.waterMl : 0;
+  var tw = db.workouts.filter(function (w) { return w.userId === ME && w.date === TODAY; }).length;
+  var h = function (v) { return v === true ? '✅' : v === false ? '❌' : '➖'; };
+  var acts = db.activities.slice(0, 3).map(function (a) { return '<div class="card sm">' + a.text + '</div>'; }).join('');
+  return '<img class="logo" alt="Logo" src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBAUEBAYFBQUGBgYHCQ4JCQgICRINDQoOFRIWFhUSFBQXGiEcFxgfGRQUHScdHyIjJSUlFhwpLCgkKyEkJST/2wBDAQYGBgkICREJCREkGBQYJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCT/wAARCAEYARgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD5UooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKWgBKWkooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigBaSiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKtadpd/q9wLbTrK5vJ26RwRl2P4AUAVaK9N0T9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esWigC/q+o2+pSxvb6ZaaeEXBS3LkOfU7mPNUQcHNJRQBf1vVpdc1SfUZo0jkmIJVM4GABxn6Vp3Hja/u4rq3uESW0ubaO3NuzNsQoAFdeeG+XPocmudooA2NK8UX+h6fPa6cwtpZ5Fd7lM+YVUHCemMnNR6z4gutdltbi9CvcwRCJpsndMASQW9wDj6AVl0UAbE3iS4n8TDxA8MXnidZ/LGdmVxgeuOKkHi/UP7F1DR22PaXsvnbTn9024MdvsSBxWHRQBt6V4lTTtLfTbjSrO/haf7QPPLgq23bxtYdqg0/XZNK1h9Ts7eKFmEgSNS22MOpXg5zxnjntWXRQBp6rr91rVpZRXoEs1orRrcsSZHQnIViTzgk4PXmsyiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigD/2Q=="><h1>Olá, Hellen! 👋</h1><p class="muted">DESAFIO 30 · Dia ' + dn + ' de ' + db.challenge.durationDays + '</p>' + bar(dn, db.challenge.durationDays) +
+  '<div class="card hero"><div><div class="lbl">SUA POSIÇÃO</div><div class="big rose">🏆 #' + pos + '</div></div><div class="r"><div class="pts">⭐ ' + me.points + ' pontos</div><div class="muted">🔥 ' + me.streak + ' dias de sequência</div></div></div>' +
+  '<h2>Hoje</h2><div class="grid">' +
+  '<div class="card"><div class="lbl">🏋️ Treino</div><div class="v">' + tw + '/1</div><div class="muted sm">Semana ' + me.workoutsThisWeek + '/' + r.workoutsPerWeek + '</div></div>' +
+  '<div class="card"><div class="lbl">🏃 Cardio</div><div class="v">' + me.cardioThisWeek + '/' + r.cardioPerWeek + '</div><div class="muted sm">na semana</div></div>' +
+  '<div class="card"><div class="lbl">💧 Água</div><div class="v">' + fmtL(water) + ' / ' + fmtL(r.waterGoalMl) + ' L</div><div class="muted sm">' + (water >= r.waterGoalMl ? 'META CONCLUÍDA!' : 'faltam ' + (r.waterGoalMl - water) + ' ml') + '</div></div>' +
+  '<div class="card"><div class="lbl">🍫 Zero doce</div><div class="v">' + h(log && log.noSweets) + '</div><div class="muted sm">🔥 ' + me.sweetsStreak + ' dias</div></div>' +
+  '<div class="card"><div class="lbl">🍺 Zero álcool</div><div class="v">' + h(log && log.noAlcohol) + '</div><div class="muted sm">🔥 ' + me.alcoholStreak + ' dias</div></div>' +
+  '<div class="card"><div class="lbl">⭐ Pontos hoje</div><div class="v">' + me.todayPoints + '</div><div class="muted sm">' + rank.length + ' participantes</div></div></div>' +
+  '<h2>Meta da semana</h2><div class="card"><div class="row"><b>Treinos da semana</b>' + badge(me.workoutStatus, me.workoutsThisWeek, r) + '</div>' +
+  bar(me.workoutsThisWeek, r.workoutBonusAt, me.workoutStatus === 'below' ? 'bad' : me.workoutStatus === 'met' ? 'ok' : 'gold') +
+  '<div class="row" style="margin-top:14px"><b>Cardio (mín. ' + r.cardioMinMinutes + ' min)</b><span class="pill ' + (me.cardioMet ? 'ok' : 'bad') + '">' + me.cardioThisWeek + '/' + r.cardioPerWeek + (me.cardioMet ? ' ✅' : '') + '</span></div>' +
+  bar(me.cardioThisWeek, r.cardioPerWeek, me.cardioMet ? 'ok' : 'warn') + '</div><h2>Atividades recentes</h2>' + acts + '<p class="note">Prévia web com dados de demonstração. O app completo está no seu GitHub.</p>';
+};
+
+V.ranking = function () {
+  var r = rules(), F = [['geral', 'Geral'], ['semana', 'Semana'], ['hoje', 'Hoje'], ['treinos', 'Treinos'], ['cardio', 'Cardio'], ['agua', 'Água'], ['disciplina', 'Disciplina']];
+  var rank = buildRanking(allStats(), ui.filter), med = { 1: '🥇', 2: '🥈', 3: '🥉' };
+  var mine = rank.filter(function (x) { return x.userId === ME; })[0];
+  return '<h1>Ranking 🏆</h1><div class="chips">' + F.map(function (f) { return chip(f[1], ui.filter === f[0], 'filter:' + f[0]); }).join('') + '</div>' +
+  '<div class="card rosebg"><b>VOCÊ — #' + mine.position + '</b><div class="big">' + mine.value + ' pontos</div></div>' +
+  rank.map(function (x) {
+    var me = x.userId === ME;
+    return '<div class="card' + (me ? ' me' : '') + '"><div class="row"><span class="medal">' + (med[x.position] || x.position + 'º') + '</span><span class="av">' + userName(x.userId).charAt(0) + '</span><div class="grow"><b>' + userName(x.userId) + (me ? ' (você)' : '') + '</b><div class="muted sm">🔥 ' + x.streak + ' dias de sequência</div></div><div class="r"><div class="pts rose">' + x.value + '</div><div class="muted sm">pontos</div></div></div>' +
+    '<div class="muted sm" style="margin-top:8px">🏋️ ' + x.workoutsTotal + ' · 🏃 ' + x.cardioTotal + ' · 💧 ' + x.waterDays + 'd · 🍫 ' + x.sweetsStreak + 'd · 🍺 ' + x.alcoholStreak + 'd</div>' +
+    '<div class="pills">' + badge(x.workoutStatus, x.workoutsThisWeek, r) + '<span class="pill ' + (x.cardioMet ? 'ok' : 'bad') + '">' + (x.cardioMet ? '🟢' : '🔴') + ' Cardio ' + x.cardioThisWeek + '/' + r.cardioPerWeek + '</span>' + (x.failedWeeks ? '<span class="pill bad">⚠️ ' + x.failedWeeks + ' sem. sem mínimo</span>' : '') + '</div></div>';
+  }).join('');
+};
+
+V.register = function () {
+  var r = rules(), me = allStats().filter(function (s) { return s.userId === ME; })[0], log = myLog(TODAY), water = log ? log.waterMl : 0;
+  var W = { musculacao: '🏋️ Musculação', funcional: '🤸 Funcional', crossfit: '🔱 Crossfit', pilates: '🧘 Pilates', corrida: '🏃 Corrida', natacao: '🏊 Natação', danca: '💃 Dança', esporte: '⚽ Esporte', outro: '✨ Outro' };
+  var C = { caminhada: '🚶 Caminhada', corrida: '🏃 Corrida', bicicleta: '🚴 Bicicleta', escada: '🪜 Escada', transport: '🚋 Transport', eliptico: '🌀 Elíptico', outro: '✨ Outro' };
+  var hab = function (field, streak, best, unit) {
+    var v = log ? log[field] : null;
+    return '<div class="card"><b>🔥 ' + streak + ' dias ' + unit + '</b><div class="muted sm">Maior sequência: ' + best + '</div><div class="two"><button class="big-btn' + (v === true ? ' okb' : '') + '" data-a="hab:' + field + ':1">✅ Cumpri</button><button class="big-btn' + (v === false ? ' badb' : '') + '" data-a="hab:' + field + ':0">❌ Não cumpri</button></div></div>';
+  };
+  return '<h1>Registrar</h1><p class="muted">Tudo em um só lugar · hoje</p>' +
+  '<h2>🏋️ Treino</h2><div class="card"><div class="muted sm">Semana: ' + me.workoutsThisWeek + '/' + r.workoutsPerWeek + (me.workoutStatus === 'bonus' ? ' ⭐' : '') + '</div><div class="chips wrap">' +
+  Object.keys(W).map(function (k) { return chip(W[k], ui.wType === k, 'wt:' + k); }).join('') + '</div><button class="btn" data-a="saveW">Registrar treino</button></div>' +
+  '<h2>🏃 Cardio</h2><div class="card"><div class="muted sm">Semana: ' + me.cardioThisWeek + '/' + r.cardioPerWeek + ' (mín. ' + r.cardioMinMinutes + ' min)</div><div class="chips wrap">' +
+  Object.keys(C).map(function (k) { return chip(C[k], ui.cType === k, 'ct:' + k); }).join('') + '</div>' +
+  '<div class="two"><label>Duração (min)<input id="cmin" inputmode="numeric" value="' + ui.cMin + '"></label><label>Horário<input id="ctime" value="' + ui.cTime + '"></label></div><button class="btn" data-a="saveC">Registrar cardio</button></div>' +
+  '<h2>💧 Água</h2><div class="card"><div class="big' + (water >= r.waterGoalMl ? ' okc' : '') + '">💧 ' + fmtL(water) + ' L / ' + fmtL(r.waterGoalMl) + ' L</div>' + (water >= r.waterGoalMl ? '<b class="okc">💧 META CONCLUÍDA!</b>' : '') +
+  '<div class="chips wrap">' + [250, 500, 750, 1000].map(function (ml) { return chip(ml >= 1000 ? '+1 L' : '+' + ml + ' ml', false, 'w:' + ml); }).join('') + '</div><div class="chips">' + chip('↩︎ Desfazer 250 ml', false, 'w:-250') + chip('Zerar', false, 'w:0') + '</div></div>' +
+  '<h2>🍫 Zero doce</h2>' + hab('noSweets', me.sweetsStreak, me.bestSweetsStreak, 'sem doce') +
+  '<h2>🍺 Zero álcool</h2>' + hab('noAlcohol', me.alcoholStreak, me.bestAlcoholStreak, 'sem álcool');
+};
+
+V.calendar = function () {
+  var r = rules(), c = db.challenge, cells = '';
+  for (var i = 0; i < c.durationDays; i++) {
+    var d = addDays(c.startDate, i), fut = d > TODAY, st = fut ? 'fut' : dayStatus(d, data(), ME, r);
+    cells += '<button class="cell ' + st + (ui.day === d ? ' sel' : '') + '" data-a="day:' + d + '"><b>' + (i + 1) + '</b><small>' + weekdayShort(d) + '</small></button>';
+  }
+  var log = myLog(ui.day), ws = db.workouts.filter(function (w) { return w.userId === ME && w.date === ui.day; }), cs = db.cardios.filter(function (x) { return x.userId === ME && x.date === ui.day; });
+  var p = dayPoints(log, r), total = ws.length * r.points.workout + cs.filter(function (x) { return x.minutes >= r.cardioMinMinutes; }).length * r.points.cardio + p.total;
+  var t = function (v) { return v === true ? '✅ Cumpriu' : v === false ? '❌ Não cumpriu' : '— sem registro'; };
+  return '<h1>Calendário 📅</h1><div class="muted sm">🟢 Tudo cumprido · 🟡 Parcial · 🔴 Não cumprido</div><div class="cal">' + cells + '</div>' +
+  '<h2>' + formatBR(ui.day) + ' · Dia ' + (dayIndex(c.startDate, ui.day) + 1) + '</h2><div class="card"><p>🏋️ Treino: ' + (ws.length ? ws.length + 'x' : '—') + '</p><p>🏃 Cardio: ' + (cs.length ? cs.map(function (x) { return x.minutes + ' min'; }).join(', ') : '—') + '</p><p>💧 Água: ' + fmtL(log ? log.waterMl : 0) + ' L' + (log && log.waterMl >= r.waterGoalMl ? ' ✅' : '') + '</p><p>🍫 Doce: ' + t(log && log.noSweets) + '</p><p>🍺 Álcool: ' + t(log && log.noAlcohol) + '</p><b class="rose">⭐ ' + total + ' pontos no dia</b></div>';
+};
+
+V.profile = function () {
+  var stats = allStats(), me = stats.filter(function (s) { return s.userId === ME; })[0], rank = buildRanking(stats, 'geral');
+  var pos = rank.filter(function (x) { return x.userId === ME; })[0].position;
+  var got = unlockedAchievements(ME, me, data(), db.challenge, pos, false);
+  return '<div class="center"><span class="av xl">H</span><h1>Hellen</h1></div><div class="three"><div class="card c"><div class="v">#' + pos + '</div><div class="muted sm">Posição</div></div><div class="card c"><div class="v">' + me.points + '</div><div class="muted sm">Pontos</div></div><div class="card c"><div class="v">🔥 ' + me.streak + '</div><div class="muted sm">Sequência</div></div></div>' +
+  '<div class="card"><p>🏋️ Treinos: <b>' + me.workoutsTotal + '</b></p><p>🏃 Cardios (≥30 min): <b>' + me.cardioTotal + '</b></p><p>💧 Dias de água: <b>' + me.waterDays + '</b></p><p>🍫 Dias sem doce: <b>' + me.sweetsDays + '</b> (maior seq. ' + me.bestSweetsStreak + ')</p><p>🍺 Dias sem álcool: <b>' + me.alcoholDays + '</b> (maior seq. ' + me.bestAlcoholStreak + ')</p></div>' +
+  '<h2>Minhas conquistas 🏅</h2><div class="grid">' + ACHIEVEMENTS.map(function (a) { var on = got.indexOf(a.id) >= 0; return '<div class="card c' + (on ? '' : ' off') + '"><div class="ic">' + (on ? a.emoji : '🔒') + '</div><b>' + a.title + '</b><div class="muted sm">' + a.desc + '</div></div>'; }).join('') + '</div>' +
+  '<h2>Aparência</h2><div class="chips">' + chip('📱 Automático', db.dark === null, 'theme:auto') + chip('☀️ Claro', db.dark === false, 'theme:light') + chip('🌙 Escuro', db.dark === true, 'theme:dark') + '</div>' +
+  '<button class="btn ghost" data-a="reset">Reiniciar demonstração</button>';
+};
+
+var TABS = [['home', '🏠', 'Início'], ['ranking', '🏆', 'Ranking'], ['register', '➕', 'Registrar'], ['calendar', '📅', 'Calendário'], ['profile', '👤', 'Perfil']];
+function render() {
+  var root = document.documentElement;
+  if (db.dark === null) root.removeAttribute('data-theme'); else root.setAttribute('data-theme', db.dark ? 'dark' : 'light');
+  var keepY = window.scrollY;
+  $app.innerHTML = '<main>' + V[ui.tab]() + '</main><nav>' + TABS.map(function (t) { return '<button class="tab' + (ui.tab === t[0] ? ' on' : '') + (t[0] === 'register' ? ' plus' : '') + '" data-a="tab:' + t[0] + '"><span>' + t[1] + '</span><small>' + t[2] + '</small></button>'; }).join('') + '</nav>' + (ui.toast ? '<div class="toast">' + ui.toast + '</div>' : '');
+  window.scrollTo(0, keepY);
+}
+
+document.addEventListener('click', function (e) {
+  var el = e.target.closest ? e.target.closest('[data-a]') : null; if (!el) return;
+  var p = el.getAttribute('data-a').split(':'), a = p[0], r = rules();
+  if (a === 'tab') { ui.tab = p[1]; window.scrollTo(0, 0); render(); }
+  else if (a === 'filter') { ui.filter = p[1]; render(); }
+  else if (a === 'day') { ui.day = p[1]; render(); }
+  else if (a === 'wt') { ui.wType = p[1]; render(); }
+  else if (a === 'ct') { keepInputs(); ui.cType = p[1]; render(); }
+  else if (a === 'saveW') {
+    db.workouts.push({ id: 'w' + Date.now(), userId: ME, date: TODAY, type: ui.wType }); var n = allStats().filter(function (s) { return s.userId === ME; })[0].workoutsThisWeek;
+    if (n === r.workoutBonusAt) post('Hellen completou ' + n + ' treinos essa semana 🔥'); save(); say(n >= r.workoutBonusAt ? '⭐ Bônus! ' + n + ' treinos na semana' : 'Treino registrado ✅ ' + n + '/' + r.workoutsPerWeek);
+  }
+  else if (a === 'saveC') {
+    keepInputs(); var m = parseInt(ui.cMin, 10); if (!m || m <= 0) { say('Informe a duração em minutos'); return; }
+    db.cardios.push({ id: 'c' + Date.now(), userId: ME, date: TODAY, time: ui.cTime, type: ui.cType, minutes: m }); if (m >= r.cardioMinMinutes) post('Hellen fez ' + m + ' min de ' + ui.cType + ' 🏃');
+    save(); say(m >= r.cardioMinMinutes ? 'Cardio registrado ✅ +' + r.points.cardio + ' pts' : 'Menos de ' + r.cardioMinMinutes + ' min não pontua');
+  }
+  else if (a === 'w') { var ml = parseInt(p[1], 10); upsertDay(TODAY, function (d) { d.waterMl = ml === 0 ? 0 : Math.max(0, d.waterMl + ml); }); }
+  else if (a === 'hab') { upsertDay(TODAY, function (d) { d[p[1]] = p[2] === '1'; }); }
+  else if (a === 'theme') { db.dark = p[1] === 'auto' ? null : p[1] === 'dark'; save(); render(); }
+  else if (a === 'reset') { reset(); }
+});
+function keepInputs() { var a = document.getElementById('cmin'), b = document.getElementById('ctime'); if (a) ui.cMin = a.value; if (b) ui.cTime = b.value; }
+document.addEventListener('DOMContentLoaded', function () { $app = document.getElementById('app'); render(); });
+if (document.readyState !== 'loading') { $app = document.getElementById('app'); render(); }
+
+</script>
+
+</body>
+</html>
