@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isMember(gid) {
+      return signedIn() &&
+        request.auth.uid in get(/databases/$(database)/documents/groups/$(gid)).data.memberIds;
+    }
+
+    // Perfis (nome e foto): qualquer usuário logado lê, cada um edita o seu
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Convites: código -> grupo. Só se lê um código por vez (get), nunca lista.
+    match /invites/{code} {
+      allow get: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.adminId == request.auth.uid
+        && !exists(/databases/$(database)/documents/invites/$(code));
+    }
+
+    match /groups/{gid} {
+      allow read: if signedIn() && request.auth.uid in resource.data.memberIds;
+      allow create: if signedIn()
+        && request.resource.data.adminId == request.auth.uid
+        && request.resource.data.memberIds == [request.auth.uid];
+      allow update: if signedIn() && (
+        resource.data.adminId == request.auth.uid ||
+        // entrar no grupo: só adiciona a si mesmo em memberIds
+        (!(request.auth.uid in resource.data.memberIds)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds'])
+          && request.auth.uid in request.resource.data.memberIds
+          && request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1)
+      );
+
+      match /workouts/{id} {
+        allow read: if isMember(gid);
+        allow create: if isMember(gid) && request.resource.data.userId == request.auth.uid;
+        allow delete: if isMember(gid) && resource.data.userId == request.auth.uid;
+      }
+      match /cardios/{id} {
+        allow read: if isMember(gid);
+        allow create: if isMember(gid) && request.resource.data.userId == request.auth.uid;
+        allow delete: if isMember(gid) && resource.data.userId == request.auth.uid;
+      }
+      match /logs/{id} {
+        allow read: if isMember(gid);
+        allow create, update: if isMember(gid)
+          && request.resource.data.userId == request.auth.uid
+          && id == request.auth.uid + '_' + request.resource.data.date;
+      }
+      match /activities/{id} {
+        allow read: if isMember(gid);
+        allow create: if isMember(gid) && request.resource.data.userId == request.auth.uid;
+        allow update: if isMember(gid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'comments']);
+      }
+    }
+  }
+}
