@@ -436,7 +436,7 @@ function initFirebase() {
   try {
     if (typeof firebase === 'undefined') return false;
     firebase.initializeApp(firebaseConfig);
-    auth = firebase.auth(); db = firebase.firestore(); try { auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL); } catch (e) {}
+    auth = firebase.auth(); db = firebase.firestore(); try { db.settings({ experimentalAutoDetectLongPolling: true, merge: true }); } catch (e) {} try { auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL); } catch (e) {}
     return true;
   } catch (e) { return false; }
 }
@@ -522,6 +522,10 @@ function say(msg) { ui.toast = msg; render(); clearTimeout(say.t); say.t = setTi
 function grp() { return db.collection('groups').doc(S.gid); }
 function post(text) { return grp().collection('activities').add({ userId: me(), text: text, createdAt: Date.now(), reactions: {}, comments: [] }); }
 function setLog(date, patch) {
+  var ex = S.days.filter(function (d) { return d.userId === me() && d.date === date; })[0];
+  if (!ex) { ex = { id: me() + '_' + date, userId: me(), date: date }; S.days.push(ex); }
+  Object.keys(patch).forEach(function (k) { var v = patch[k]; if (v && typeof v === 'object') delete ex[k]; else ex[k] = v; });
+  render();
   var ref = grp().collection('logs').doc(me() + '_' + date);
   return ref.set(Object.assign({ userId: me(), date: date }, patch), { merge: true }).catch(onErr);
 }
@@ -536,6 +540,8 @@ function addWorkout() {
   if (!ui.wPhoto) return say('Tire uma foto do treino 📸 (obrigatória)');
   var r = rules(), before = computeUserStats(me(), data(), challenge(), TODAY), n = before.workoutsThisWeek + 1, photo = ui.wPhoto;
   var aref = grp().collection('activities').doc();
+  S.workouts.push({ id: 'tmp' + Date.now(), userId: me(), date: TODAY, type: ui.wType, createdAt: Date.now() });
+  S.acts.push({ id: aref.id, userId: me(), text: nm(me()) + ' treinou · ' + WT[ui.wType], createdAt: Date.now(), reactions: {}, comments: [], photo: photo });
   aref.set({ userId: me(), text: nm(me()) + ' treinou · ' + WT[ui.wType] + (n >= r.workoutBonusAt ? ' ⭐' : ''), createdAt: Date.now(), reactions: {}, comments: [], photo: photo, kind: 'workout' }).catch(onErr);
   grp().collection('workouts').add({ userId: me(), date: TODAY, type: ui.wType, createdAt: Date.now(), actId: aref.id, hasPhoto: true }).catch(onErr);
   ui.wPhoto = '';
@@ -547,6 +553,7 @@ function addCardio() {
   var r = rules(), m = parseInt(ui.f.cmin || '30', 10), t = ui.f.ctime || '07:00';
   if (!m || m <= 0) return say('Informe a duração em minutos');
   if (!/^([01]?\d|2[0-3]):[0-5]\d$/.test(t)) return say('Horário no formato HH:MM');
+  S.cardios.push({ id: 'tmp' + Date.now(), userId: me(), date: TODAY, time: t, type: ui.cType, minutes: m, createdAt: Date.now() });
   grp().collection('cardios').add({ userId: me(), date: TODAY, time: t, type: ui.cType, minutes: m, note: ui.f.cnote || '', createdAt: Date.now() }).catch(onErr);
   if (m >= r.cardioMinMinutes) post(nm(me()) + ' fez ' + m + ' min de ' + ui.cType + ' 🏃');
   ui.f.cnote = ''; say(m >= r.cardioMinMinutes ? 'Cardio registrado ✅ +' + r.points.cardio + ' pts' : 'Registrado, mas menos de ' + r.cardioMinMinutes + ' min não pontua');
@@ -835,7 +842,7 @@ V.group = function () {
 };
 
 V.profile = function () {
-  var g = curGroup(), pr = S.profile, html = '<div class="center"><label for="photoProf" style="cursor:pointer;display:inline-block">' + av(me(), 96) + '</label><input type="file" id="photoProf" accept="image/*" hidden><div class="sm muted" style="margin-top:4px">Toque na foto para trocar</div></div>' +
+  var g = curGroup(), pr = S.profile, pn0 = (ui.f.pname === undefined ? (ui.f.pname = S.profile.name || '') : 0), html = '<div class="center"><label for="photoProf" style="cursor:pointer;display:inline-block">' + av(me(), 96) + '</label><input type="file" id="photoProf" accept="image/*" hidden><div class="sm muted" style="margin-top:4px">Toque na foto para trocar</div></div>' +
     '<div class="card" style="margin-top:14px">' + field('pname', 'SEU NOME') + '<button class="btn" data-a="saveName" style="margin-top:0">Salvar nome</button></div>';
   if (ui.f.pname === undefined) ui.f.pname = pr.name || '';
   if (g) {
@@ -867,27 +874,36 @@ V.profile = function () {
 var TABS = [['home', '🏠', 'Início'], ['ranking', '🏆', 'Ranking'], ['register', '＋', 'Registrar'], ['group', '👥', 'Grupo'], ['profile', '👤', 'Perfil']];
 function applyTheme() { var t = lsGet('d30-theme') || 'dark', el = document.documentElement; if (t === 'auto') el.removeAttribute('data-theme'); else el.setAttribute('data-theme', t); }
 
-var rendering = false;
-function render() {
-  if (!$app || rendering) return; rendering = true; TODAY = todayISO(); applyTheme();
-  var a = document.activeElement, focusId = a && a.id && /INPUT|TEXTAREA/.test(a.tagName) ? a.id : null, ss = focusId ? a.selectionStart : 0, y = window.scrollY, body = '';
-  if (!S.ready) body = '<div class="busy"><div class="spin"></div></div>';
-  else if (!auth) body = '<main><div class="card center"><h3>Não foi possível carregar o Firebase</h3><p class="muted sm">Verifique a internet e recarregue a página.</p></div></main>';
-  else if (!S.user) body = V.auth();
-  else if (!S.profile) body = '<div class="busy"><div class="spin"></div></div>';
-  else {
-    var view = V[ui.tab] ? V[ui.tab]() : V.home();
-    body = '<main>' + view + '</main><nav>' + TABS.map(function (t) { return '<button class="tab' + (ui.tab === t[0] ? ' on' : '') + (t[0] === 'register' ? ' plus' : '') + '" data-a="tab:' + t[0] + '"><span class="e">' + t[1] + '</span><small>' + t[2] + '</small></button>'; }).join('') + '</nav>';
-  }
-  $app.innerHTML = body + (ui.busy ? '<div class="busy"><div class="spin"></div></div>' : '') + (ui.toast ? '<div class="toast">' + esc(ui.toast) + '</div>' : '');
-  if (focusId) { var n = document.getElementById(focusId); if (n) { n.focus(); try { n.setSelectionRange(ss, ss); } catch (e) {} } }
-  window.scrollTo(0, y); rendering = false;
+var rendering = false, renderQ = 0, lastHtml = '';
+function render() { if (renderQ) return; renderQ = requestAnimationFrame(function () { renderQ = 0; doRender(); }); }
+function navHtml() { return '<nav>' + TABS.map(function (t) { return '<button class="tab' + (ui.tab === t[0] ? ' on' : '') + (t[0] === 'register' ? ' plus' : '') + '" data-a="tab:' + t[0] + '"><span class="e">' + t[1] + '</span><small>' + t[2] + '</small></button>'; }).join('') + '</nav>'; }
+function doRender() {
+  if (!$app || rendering) return; rendering = true;
+  try {
+    TODAY = todayISO(); applyTheme();
+    var a = document.activeElement, focusId = a && a.id && a.tagName === 'INPUT' && a.type !== 'file' ? a.id : null, ss = 0, y = window.scrollY, body = '';
+    try { ss = focusId ? a.selectionStart : 0; } catch (e) { ss = 0; }
+    if (!S.ready) body = '<div class="busy"><div class="spin"></div></div>';
+    else if (!auth) body = '<main><div class="card center"><h3>Não foi possível carregar o Firebase</h3><p class="muted sm">Verifique a internet e recarregue a página.</p></div></main>';
+    else if (!S.user) body = V.auth();
+    else if (!S.profile) body = '<div class="busy"><div class="spin"></div></div>';
+    else {
+      try { var view = V[ui.tab] ? V[ui.tab]() : V.home(); body = '<main>' + view + '</main>' + navHtml(); }
+      catch (e) { console.error(e); body = '<main><div class="card center"><h3>Ops, algo falhou 😕</h3><p class="muted sm">' + esc(e && e.message) + '</p><button class="btn" data-a="reload">Recarregar</button></div></main>' + navHtml(); }
+    }
+    var html = body + (ui.busy ? '<div class="busy"><div class="spin"></div></div>' : '') + (ui.toast ? '<div class="toast">' + esc(ui.toast) + '</div>' : '');
+    if (html !== lastHtml) {
+      lastHtml = html; $app.innerHTML = html;
+      if (focusId) { var n = document.getElementById(focusId); if (n) { n.focus(); try { n.setSelectionRange(ss, ss); } catch (e) {} } }
+      window.scrollTo(0, y);
+    }
+  } catch (e) { console.error(e); } finally { rendering = false; }
 }
 
 document.addEventListener('input', function (e) { var t = e.target; if (t && t.id && t.classList && t.classList.contains('i')) ui.f[t.id] = t.value; });
 document.addEventListener('change', function (e) {
   var t = e.target; if (!t || !t.files || !t.files[0]) return;
-  resizePhoto(t.files[0], function (url) { if (t.id === 'photoReg') { ui.photo = url; render(); } else if (t.id === 'photoProf') saveProfile({ photo: url }); else if (t.id === 'photoW' || t.id === 'photoWg') { ui.wPhoto = url; render(); } }, (t.id === 'photoW' || t.id === 'photoWg') ? 720 : 0);
+  resizePhoto(t.files[0], function (url) { if (t.id === 'photoReg') { ui.photo = url; render(); } else if (t.id === 'photoProf') saveProfile({ photo: url }); else if (t.id === 'photoW' || t.id === 'photoWg') { ui.wPhoto = url; render(); } }, (t.id === 'photoW' || t.id === 'photoWg') ? 640 : 0);
 });
 document.addEventListener('keydown', function (e) {
   if (e.key !== 'Enter' || !e.target || e.target.tagName !== 'INPUT') return; var id = e.target.id;
@@ -905,6 +921,7 @@ document.addEventListener('click', function (e) {
   else if (a === 'sub') { ui.sub = p[1] || ''; ui.confirm = ''; window.scrollTo(0, 0); render(); }
   else if (a === 'wk') { ui.wk = parseInt(p[1], 10); render(); }
   else if (a === 'tg') { var tf = p[2], cv = (myLog(p[1]) || {})[tf], o2 = {}; o2[tf] = cv === undefined ? true : cv === true ? false : firebase.firestore.FieldValue.delete(); setLog(p[1], o2); }
+  else if (a === 'reload') location.reload();
   else if (a === 'saveW') addWorkout(); else if (a === 'saveC') addCardio();
   else if (a === 'w') addWater(parseInt(p[1], 10));
   else if (a === 'hab') setLog(TODAY, (function () { var o = {}; o[p[1]] = p[2] === '1'; return o; })());
