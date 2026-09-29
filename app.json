@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Desafio 30",
+    "slug": "desafio30",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": { "image": "./assets/splash-icon.png", "resizeMode": "contain", "backgroundColor": "#000000" },
+    "ios": { "supportsTablet": true, "bundleIdentifier": "com.seudominio.desafio30", "infoPlist": { "NSPhotoLibraryUsageDescription": "Escolher foto de perfil e de atividades." } },
+    "android": { "package": "com.seudominio.desafio30", "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.png", "backgroundColor": "#000000" } },
+    "web": { "favicon": "./assets/favicon.png", "bundler": "metro" },
+    "plugins": ["expo-notifications", "expo-image-picker"]
+  }
+}
