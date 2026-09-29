@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#08080b">
+<meta name="color-scheme" content="dark light">
 <title>Desafio 30</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -788,7 +789,7 @@ V.profile = function () {
       '<div class="card"><b class="sm">Pontuação acumulada</b>' + lineChart(cum, false, 300, 100) + '</div><div class="card"><b class="sm">Evolução no ranking</b>' + lineChart(posv, true, 300, 100) + '<div class="tiny muted">Topo = 1º lugar · hoje #' + pos + '</div></div>' +
       '<h2>Histórico</h2>' + (hist.length ? hist.map(function (h) { return '<div class="card row between" style="padding:12px 14px"><div><b class="sm">' + h.t + '</b><div class="tiny muted">' + formatBR(h.date) + '</div></div><button class="link bad" data-a="del:' + h.col + ':' + h.id + '">' + (ui.confirm === 'del:' + h.id ? 'Confirmar' : 'Excluir') + '</button></div>'; }).join('') : '<p class="muted sm">Sem registros ainda.</p>');
   }
-  var th = lsGet('d30-theme') || 'auto';
+  var th = lsGet('d30-theme') || 'dark';
   html += '<h2>Aparência</h2><div class="chips">' + chip('📱 Automático', th === 'auto', 'theme:auto') + chip('☀️ Claro', th === 'light', 'theme:light') + chip('🌙 Escuro', th === 'dark', 'theme:dark') + '</div>' +
     '<div class="card sm muted">🔔 Lembretes de água, treino e cardio chegam no app instalado (versão nativa). Na versão web, use o alarme do celular.</div><button class="btn ghost" data-a="logout">Sair da conta</button>' +
     '<div class="note">Para instalar: Android, menu ⋮ → Adicionar à tela inicial. iPhone, Compartilhar → Adicionar à Tela de Início.</div>';
@@ -796,7 +797,7 @@ V.profile = function () {
 };
 
 var TABS = [['home', '🏠', 'Início'], ['ranking', '🏆', 'Ranking'], ['register', '＋', 'Registrar'], ['group', '👥', 'Grupo'], ['profile', '👤', 'Perfil']];
-function applyTheme() { var t = lsGet('d30-theme') || 'auto', el = document.documentElement; if (t === 'auto') el.removeAttribute('data-theme'); else el.setAttribute('data-theme', t); }
+function applyTheme() { var t = lsGet('d30-theme') || 'dark', el = document.documentElement; if (t === 'auto') el.removeAttribute('data-theme'); else el.setAttribute('data-theme', t); }
 
 var rendering = false;
 function render() {
