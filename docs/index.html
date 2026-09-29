@@ -422,7 +422,7 @@ var firebaseConfig = {
 };
 var auth = null, db = null, $app = null, TODAY = todayISO();
 var S = { ready: false, user: null, profile: null, groups: [], gid: null, users: {}, workouts: [], cardios: [], days: [], acts: [] };
-var ui = { tab: 'home', mode: 'login', f: {}, filter: 'geral', day: TODAY, wType: 'musculacao', cType: 'caminhada', open: null, toast: '', busy: false, err: '', photo: '', wPhoto: '', sub: '', wk: null, confirm: '', pendingProfile: null };
+var ui = { tab: (['home', 'ranking', 'register', 'group', 'profile', 'calendar'].indexOf(lsGet('d30-tab')) >= 0 ? lsGet('d30-tab') : 'home'), mode: 'login', f: {}, filter: 'geral', day: TODAY, wType: 'musculacao', cType: 'caminhada', open: null, toast: '', busy: false, err: '', photo: '', wPhoto: '', sub: '', wk: null, confirm: '', pendingProfile: null };
 var userUnsubs = [], groupUnsubs = [], attachedGid = null;
 
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -896,7 +896,7 @@ document.addEventListener('keydown', function (e) {
 document.addEventListener('click', function (e) {
   var el = e.target.closest ? e.target.closest('[data-a]') : null; if (!el) return;
   var p = el.getAttribute('data-a').split(':'), a = p[0];
-  if (a === 'tab') { ui.tab = p[1]; ui.sub = ''; ui.confirm = ''; window.scrollTo(0, 0); render(); }
+  if (a === 'tab') { ui.tab = p[1]; lsSet('d30-tab', p[1]); ui.sub = ''; ui.confirm = ''; window.scrollTo(0, 0); render(); }
   else if (a === 'mode') { ui.mode = p[1]; ui.err = ''; render(); }
   else if (a === 'login') doLogin(); else if (a === 'register') doRegister(); else if (a === 'google') doGoogle(); else if (a === 'reset') doReset();
   else if (a === 'filter') { ui.filter = p[1]; render(); }
