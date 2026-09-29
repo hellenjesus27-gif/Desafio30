@@ -436,7 +436,7 @@ function initFirebase() {
   try {
     if (typeof firebase === 'undefined') return false;
     firebase.initializeApp(firebaseConfig);
-    auth = firebase.auth(); db = firebase.firestore(); try { db.settings({ experimentalAutoDetectLongPolling: true, merge: true }); } catch (e) {} try { auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL); } catch (e) {}
+    auth = firebase.auth(); db = firebase.firestore(); try { db.settings({ experimentalAutoDetectLongPolling: true, merge: true }); } catch (e) {} try { db.enablePersistence({ synchronizeTabs: true }).catch(function () {}); } catch (e) {} try { auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL); } catch (e) {}
     return true;
   } catch (e) { return false; }
 }
@@ -491,7 +491,7 @@ function attachGroup() {
   var sub = function (name, key, map, q) {
     groupUnsubs.push((q ? q(base.collection(name)) : base.collection(name)).onSnapshot(function (qs) { S[key] = qs.docs.map(function (d) { var x = d.data(); x.id = d.id; return map ? map(x) : x; }); render(); }, onErr));
   };
-  sub('workouts', 'workouts'); sub('cardios', 'cardios'); sub('logs', 'days'); sub('activities', 'acts', null, function (c) { return c.orderBy('createdAt', 'desc').limit(30); });
+  sub('workouts', 'workouts'); sub('cardios', 'cardios'); sub('logs', 'days'); sub('activities', 'acts', null, function (c) { return c.orderBy('createdAt', 'desc').limit(15); });
 }
 function loadUser(id) {
   if (S.users[id]) return;
@@ -615,7 +615,7 @@ function resizePhoto(file, cb, max) {
     var img = new Image();
     img.onload = function () {
       var c = document.createElement('canvas'), x;
-      if (max) { var k = Math.min(1, max / Math.max(img.width, img.height)); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); x = c.getContext('2d'); x.drawImage(img, 0, 0, c.width, c.height); cb(c.toDataURL('image/jpeg', 0.6)); return; }
+      if (max) { var k = Math.min(1, max / Math.max(img.width, img.height)); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); x = c.getContext('2d'); x.drawImage(img, 0, 0, c.width, c.height); cb(c.toDataURL('image/jpeg', 0.5)); return; }
       var sz = 220, m = Math.min(img.width, img.height); c.width = sz; c.height = sz; x = c.getContext('2d');
       x.drawImage(img, (img.width - m) / 2, (img.height - m) / 2, m, m, 0, 0, sz, sz); cb(c.toDataURL('image/jpeg', 0.72));
     };
@@ -810,7 +810,7 @@ V.calendar = function () {
 V.group = function () {
   var g = curGroup(); if (!g) return V.empty();
   var r = rules(), c = challenge(), isAdmin = g.adminId === me(), EM = { like: '❤️', fire: '🔥', muscle: '💪', clap: '👏' };
-  var feed = S.acts.slice().sort(function (a, b) { return b.createdAt - a.createdAt; }).slice(0, 20).map(function (a) {
+  var feed = S.acts.slice().sort(function (a, b) { return b.createdAt - a.createdAt; }).slice(0, 15).map(function (a) {
     var rx = a.reactions || {}, cms = a.comments || [];
     return '<div class="card act"><div class="row">' + av(a.userId, 36) + '<div class="grow"><b>' + esc(nm(a.userId)) + '</b><div class="tiny muted">' + ago(a.createdAt) + '</div></div></div><div class="txt">' + esc(a.text) + '</div>' + (a.photo ? '<img class="proof" loading="lazy" src="' + a.photo + '" alt="Foto do treino">' : '') + '<div class="row wrap" style="gap:6px">' +
       Object.keys(EM).map(function (k) { var l = rx[k] || []; return '<button class="react' + (l.indexOf(me()) >= 0 ? ' on' : '') + '" data-a="react:' + a.id + ':' + k + '">' + EM[k] + (l.length ? ' ' + l.length : '') + '</button>'; }).join('') +
@@ -903,7 +903,7 @@ function doRender() {
 document.addEventListener('input', function (e) { var t = e.target; if (t && t.id && t.classList && t.classList.contains('i')) ui.f[t.id] = t.value; });
 document.addEventListener('change', function (e) {
   var t = e.target; if (!t || !t.files || !t.files[0]) return;
-  resizePhoto(t.files[0], function (url) { if (t.id === 'photoReg') { ui.photo = url; render(); } else if (t.id === 'photoProf') saveProfile({ photo: url }); else if (t.id === 'photoW' || t.id === 'photoWg') { ui.wPhoto = url; render(); } }, (t.id === 'photoW' || t.id === 'photoWg') ? 640 : 0);
+  resizePhoto(t.files[0], function (url) { if (t.id === 'photoReg') { ui.photo = url; render(); } else if (t.id === 'photoProf') saveProfile({ photo: url }); else if (t.id === 'photoW' || t.id === 'photoWg') { ui.wPhoto = url; render(); } }, (t.id === 'photoW' || t.id === 'photoWg') ? 560 : 0);
 });
 document.addEventListener('keydown', function (e) {
   if (e.key !== 'Enter' || !e.target || e.target.tagName !== 'INPUT') return; var id = e.target.id;
