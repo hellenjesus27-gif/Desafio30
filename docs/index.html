@@ -107,6 +107,15 @@ nav{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-b
 .cmt{background:var(--card2);border-radius:12px;padding:8px 12px;margin-top:8px}
 svg text{fill:var(--muted);font-size:9px;font-family:var(--f-body)}
 .note{font-size:.75rem;color:var(--muted);text-align:center;margin-top:20px}
+/* foto do treino, checklists */
+.pick{display:block;cursor:pointer;margin-bottom:6px} .pickph{display:flex;flex-direction:column;align-items:center;gap:4px;padding:22px 12px;border:2px dashed var(--line);border-radius:18px;background:var(--card2);text-align:center}
+.proof{width:100%;max-height:420px;object-fit:cover;border-radius:16px;display:block;margin:0 0 10px}
+.tscroll{overflow-x:auto} .wkt{width:100%;border-collapse:collapse;font-size:.95rem} .wkt th,.wkt td{text-align:center;padding:6px 2px;border-bottom:1px solid var(--line)} .wkt .l{text-align:left;white-space:nowrap} .wkt tr.today td{background:rgba(242,167,189,.08)}
+.tgl{font:inherit;background:none;border:0;min-width:40px;min-height:36px;cursor:pointer;color:inherit;border-radius:10px}
+.ck{padding:8px 10px;border-radius:12px;background:var(--card2);margin-top:6px;font-size:.9rem} .ck.ok{outline:1px solid var(--ok)} .ck.bad{outline:1px solid var(--bad)}
+.ci{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)} .ci:last-child{border-bottom:0} .ci.done .grow{color:var(--muted);text-decoration:line-through}
+.yn{display:flex;gap:6px} .yn button{font:inherit;font-size:.8rem;font-weight:700;padding:7px 12px;border-radius:99px;border:1px solid var(--line);background:var(--card2);color:var(--fg);min-height:36px;cursor:pointer} .yn .yes{background:var(--ok);color:#052e12;border-color:transparent} .yn .no{background:var(--bad);color:#fff;border-color:transparent}
+.bar{height:8px;border-radius:4px;background:var(--card2);margin-bottom:6px;overflow:hidden} .bar i{display:block;height:100%;background:var(--rose);border-radius:4px;transition:width .3s}
 button:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
 .link{background:none;border:0;color:var(--rose);font:inherit;font-weight:700;cursor:pointer;padding:6px 0}
 
@@ -408,7 +417,7 @@ var firebaseConfig = {
 };
 var auth = null, db = null, $app = null, TODAY = todayISO();
 var S = { ready: false, user: null, profile: null, groups: [], gid: null, users: {}, workouts: [], cardios: [], days: [], acts: [] };
-var ui = { tab: 'home', mode: 'login', f: {}, filter: 'geral', day: TODAY, wType: 'musculacao', cType: 'caminhada', open: null, toast: '', busy: false, err: '', photo: '', confirm: '', pendingProfile: null };
+var ui = { tab: 'home', mode: 'login', f: {}, filter: 'geral', day: TODAY, wType: 'musculacao', cType: 'caminhada', open: null, toast: '', busy: false, err: '', photo: '', wPhoto: '', sub: '', wk: null, confirm: '', pendingProfile: null };
 var userUnsubs = [], groupUnsubs = [], attachedGid = null;
 
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -474,10 +483,10 @@ function attachGroup() {
   if (!S.gid) return;
   attachedGid = S.gid; lsSet('d30-gid', S.gid);
   var base = db.collection('groups').doc(S.gid);
-  var sub = function (name, key, map) {
-    groupUnsubs.push(base.collection(name).onSnapshot(function (qs) { S[key] = qs.docs.map(function (d) { var x = d.data(); x.id = d.id; return map ? map(x) : x; }); render(); }, onErr));
+  var sub = function (name, key, map, q) {
+    groupUnsubs.push((q ? q(base.collection(name)) : base.collection(name)).onSnapshot(function (qs) { S[key] = qs.docs.map(function (d) { var x = d.data(); x.id = d.id; return map ? map(x) : x; }); render(); }, onErr));
   };
-  sub('workouts', 'workouts'); sub('cardios', 'cardios'); sub('logs', 'days'); sub('activities', 'acts');
+  sub('workouts', 'workouts'); sub('cardios', 'cardios'); sub('logs', 'days'); sub('activities', 'acts', null, function (c) { return c.orderBy('createdAt', 'desc').limit(30); });
 }
 function loadUser(id) {
   if (S.users[id]) return;
@@ -516,10 +525,14 @@ function addWater(ml) {
   setLog(TODAY, { waterMl: next });
   if (cur < r.waterGoalMl && next >= r.waterGoalMl) { post(nm(me()) + ' bateu a meta de ' + fmtL(r.waterGoalMl) + ' L de água 💧'); say('💧 META CONCLUÍDA!'); }
 }
+var WT = { musculacao: '🏋️ Musculação', funcional: '🤸 Funcional', crossfit: '🔱 Crossfit', pilates: '🧘 Pilates', corrida: '🏃 Corrida', natacao: '🏊 Natação', danca: '💃 Dança', esporte: '⚽ Esporte', outro: '✨ Outro' };
 function addWorkout() {
-  var r = rules(), before = computeUserStats(me(), data(), challenge(), TODAY), n = before.workoutsThisWeek + 1;
-  grp().collection('workouts').add({ userId: me(), date: TODAY, type: ui.wType, createdAt: Date.now() }).catch(onErr);
-  if (before.workoutsTotal === 0) post(nm(me()) + ' registrou o primeiro treino 🏆');
+  if (!ui.wPhoto) return say('Tire uma foto do treino 📸 (obrigatória)');
+  var r = rules(), before = computeUserStats(me(), data(), challenge(), TODAY), n = before.workoutsThisWeek + 1, photo = ui.wPhoto;
+  var aref = grp().collection('activities').doc();
+  aref.set({ userId: me(), text: nm(me()) + ' treinou · ' + WT[ui.wType] + (n >= r.workoutBonusAt ? ' ⭐' : ''), createdAt: Date.now(), reactions: {}, comments: [], photo: photo, kind: 'workout' }).catch(onErr);
+  grp().collection('workouts').add({ userId: me(), date: TODAY, type: ui.wType, createdAt: Date.now(), actId: aref.id, hasPhoto: true }).catch(onErr);
+  ui.wPhoto = '';
   if (n === r.workoutBonusAt) post(nm(me()) + ' completou ' + n + ' treinos essa semana 🔥');
   say(n >= r.workoutBonusAt ? '⭐ Meta + bônus! ' + n + ' treinos' : n >= r.workoutsPerWeek ? '🟢 Meta cumprida! ' + n + ' treinos' : 'Treino registrado ✅ ' + n + '/' + r.workoutsPerWeek);
 }
@@ -550,7 +563,7 @@ function createGroup() {
   b.set(ref, { name: name, inviteCode: code, adminId: me(), memberIds: [me()], startDate: TODAY, durationDays: 30, status: 'active', rules: DEFAULT_RULES, createdAt: Date.now() });
   b.set(db.collection('invites').doc(code), { groupId: ref.id, adminId: me() });
   ui.busy = true; render();
-  b.commit().then(function () { ui.busy = false; S.gid = ref.id; ui.f.gname = ''; ui.tab = 'group'; say('Grupo criado 🎉'); }).catch(onErr);
+  b.commit().then(function () { ui.busy = false; S.gid = ref.id; ui.f.gname = ''; ui.tab = 'group'; ui.sub = ''; say('Grupo criado 🎉 Compartilhe o código!'); }).catch(onErr);
 }
 function joinGroup() {
   var code = (ui.f.jcode || '').trim().toUpperCase(); if (!code) return say('Digite o código');
@@ -582,13 +595,15 @@ function shareInvite() {
   var g = curGroup(), url = location.origin + location.pathname, text = 'Entre no meu grupo "' + g.name + '" no Desafio 30! 💪🔥\nCódigo: ' + g.inviteCode + '\n' + url;
   if (navigator.share) navigator.share({ title: 'Desafio 30', text: text }).catch(function () {}); else copyText(text);
 }
-function resizePhoto(file, cb) {
+function resizePhoto(file, cb, max) {
   var rd = new FileReader();
   rd.onload = function () {
     var img = new Image();
     img.onload = function () {
-      var s = 220, c = document.createElement('canvas'); c.width = s; c.height = s; var x = c.getContext('2d'), m = Math.min(img.width, img.height);
-      x.drawImage(img, (img.width - m) / 2, (img.height - m) / 2, m, m, 0, 0, s, s); cb(c.toDataURL('image/jpeg', 0.72));
+      var c = document.createElement('canvas'), x;
+      if (max) { var k = Math.min(1, max / Math.max(img.width, img.height)); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); x = c.getContext('2d'); x.drawImage(img, 0, 0, c.width, c.height); cb(c.toDataURL('image/jpeg', 0.6)); return; }
+      var sz = 220, m = Math.min(img.width, img.height); c.width = sz; c.height = sz; x = c.getContext('2d');
+      x.drawImage(img, (img.width - m) / 2, (img.height - m) / 2, m, m, 0, 0, sz, sz); cb(c.toDataURL('image/jpeg', 0.72));
     };
     img.src = rd.result;
   };
@@ -706,6 +721,46 @@ V.ranking = function () {
     }).join('');
 };
 
+function photoPicker() {
+  return '<label for="photoW" class="pick">' + (ui.wPhoto ? '<img class="proof" src="' + ui.wPhoto + '" alt="Foto do treino"><div class="tiny muted center">Toque para trocar a foto</div>' : '<div class="pickph"><span style="font-size:2rem">📸</span><b>Foto do treino</b><span class="tiny muted">Obrigatória · toque para tirar ou escolher</span></div>') + '</label><input type="file" id="photoW" accept="image/*" hidden>';
+}
+function dayChecklist() {
+  var r = rules(), log = myLog(TODAY) || {}, w = S.workouts.filter(function (x) { return x.userId === me() && x.date === TODAY; }).length,
+    ca = S.cardios.filter(function (x) { return x.userId === me() && x.date === TODAY && x.minutes >= r.cardioMinMinutes; }).length, water = log.waterMl || 0;
+  var done = [w > 0, ca > 0, water >= r.waterGoalMl, log.noSweets === true, log.noAlcohol === true], n = done.filter(Boolean).length;
+  var item = function (ok, label, right) { return '<div class="ci' + (ok ? ' done' : '') + '"><span class="cb">' + (ok ? '✅' : '⬜') + '</span><span class="grow">' + label + '</span>' + (right || '') + '</div>'; };
+  var yn = function (f) { var v = log[f]; return '<span class="yn"><button class="' + (v === true ? 'yes' : '') + '" data-a="hab:' + f + ':1">Cumpri</button><button class="' + (v === false ? 'no' : '') + '" data-a="hab:' + f + ':0">Não</button></span>'; };
+  return '<h2 style="margin-top:14px">✅ Checklist de hoje <span class="sm muted">· ' + n + '/5</span></h2><div class="card">' +
+    '<div class="bar"><i style="width:' + (n * 20) + '%"></i></div>' +
+    item(w > 0, '🏋️ Treino com foto', '<span class="tiny muted">' + (w > 0 ? 'feito' : 'registre abaixo') + '</span>') +
+    item(ca > 0, '🏃 Cardio ' + r.cardioMinMinutes + '+ min', '<span class="tiny muted">' + (ca > 0 ? 'feito' : 'registre abaixo') + '</span>') +
+    item(water >= r.waterGoalMl, '💧 Água ' + fmtL(water) + '/' + fmtL(r.waterGoalMl) + ' L', '') +
+    item(log.noSweets === true, '🍫 Zero doce', yn('noSweets')) +
+    item(log.noAlcohol === true, '🍺 Zero álcool', yn('noAlcohol')) + '</div>';
+}
+function weekChecklist() {
+  var c = challenge(), r = c.rules, total = Math.max(1, Math.ceil(c.durationDays / 7)), cur = Math.max(0, Math.min(total - 1, weekIndex(c.startDate, TODAY)));
+  var wk = ui.wk == null ? cur : Math.max(0, Math.min(total - 1, ui.wk)), rows = '', nW = 0, nC = 0, nWa = 0, nS = 0, nA = 0, nd = 0;
+  for (var i = 0; i < 7; i++) {
+    var idx = wk * 7 + i; if (idx >= c.durationDays) break;
+    var d = addDays(c.startDate, idx), fut = d > TODAY, log = myLog(d) || {}, dd = d;
+    var w = S.workouts.filter(function (x) { return x.userId === me() && x.date === dd; }).length;
+    var ca = S.cardios.filter(function (x) { return x.userId === me() && x.date === dd && x.minutes >= r.cardioMinMinutes; }).length;
+    var water = (log.waterMl || 0) >= r.waterGoalMl; nW += w; nC += ca; if (water) nWa++; if (log.noSweets === true) nS++; if (log.noAlcohol === true) nA++; nd++;
+    var tg = function (f) { var v = log[f]; return fut ? '<span class="muted">·</span>' : '<button class="tgl" data-a="tg:' + dd + ':' + f + '">' + (v === true ? '✅' : v === false ? '❌' : '<span class="muted">—</span>') + '</button>'; };
+    rows += '<tr' + (d === TODAY ? ' class="today"' : '') + '><td class="l"><b>' + weekdayShort(d) + '</b> <span class="tiny muted">' + d.slice(8) + '/' + d.slice(5, 7) + '</span></td><td>' + (w ? '✅' + (w > 1 ? '×' + w : '') : '<span class="muted">' + (fut || d === TODAY ? '·' : '—') + '</span>') + '</td><td>' + (ca ? '✅' : '<span class="muted">' + (fut || d === TODAY ? '·' : '—') + '</span>') + '</td><td>' + (water ? '✅' : fut || d === TODAY ? '<span class="muted">·</span>' : '❌') + '</td><td>' + tg('noSweets') + '</td><td>' + tg('noAlcohol') + '</td></tr>';
+  }
+  var okW = nW >= r.workoutsPerWeek, okC = nC >= r.cardioPerWeek;
+  var chk = function (ok, txt) { return '<div class="ck ' + (ok ? 'ok' : 'bad') + '">' + (ok ? '✅' : '🔴') + ' ' + txt + '</div>'; };
+  return '<h2 style="margin-top:22px">📋 Checklist da semana</h2>' +
+    '<div class="card"><div class="row between" style="margin-bottom:10px"><button class="chip" data-a="wk:' + (wk - 1) + '"' + (wk <= 0 ? ' disabled style="opacity:.35"' : '') + '>‹</button><b>Semana ' + (wk + 1) + ' de ' + total + (wk === cur ? ' · atual' : '') + '</b><button class="chip" data-a="wk:' + (wk + 1) + '"' + (wk >= total - 1 ? ' disabled style="opacity:.35"' : '') + '>›</button></div>' +
+    '<div class="tscroll"><table class="wkt"><thead><tr><th class="l"></th><th>🏋️</th><th>🏃</th><th>💧</th><th>🍫</th><th>🍺</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+    '<div class="tiny muted" style="margin:8px 0">Toque em 🍫 ou 🍺 para marcar (também dias passados): ✅ cumpri · ❌ não cumpri · — sem registro.</div>' +
+    chk(okW, 'Treinos: <b>' + nW + '/' + r.workoutsPerWeek + '</b>' + (nW >= r.workoutBonusAt ? ' ⭐ bônus' : okW ? '' : ' · faltam ' + (r.workoutsPerWeek - nW))) +
+    chk(okC, 'Cardios (' + r.cardioMinMinutes + '+ min): <b>' + nC + '/' + r.cardioPerWeek + '</b>' + (okC ? '' : ' · faltam ' + (r.cardioPerWeek - nC))) +
+    '<div class="ck">💧 Água: <b>' + nWa + '/' + nd + '</b> dias · 🍫 Sem doce: <b>' + nS + '/' + nd + '</b> · 🍺 Sem álcool: <b>' + nA + '/' + nd + '</b></div>' +
+    '<div class="ck ' + (okW && okC ? 'ok' : '') + '" style="font-weight:800">' + (okW && okC ? '🟢 Mínimos da semana cumpridos!' : '🔴 Ainda faltam mínimos da semana') + '</div></div>';
+}
 V.register = function () {
   var g = curGroup(); if (!g) return V.empty();
   var r = rules(), mine = statsAll().filter(function (s) { return s.userId === me(); })[0], log = myLog(TODAY) || {}, water = log.waterMl || 0;
@@ -714,14 +769,14 @@ V.register = function () {
   var hab = function (f, streak, best, unit) {
     var v = log[f]; return '<div class="card"><b class="disp">🔥 ' + streak + ' ' + (streak === 1 ? 'dia' : 'dias') + ' ' + unit + '</b><div class="sm muted">Maior sequência: ' + best + '</div><div class="seg"><button class="' + (v === true ? 'yes' : '') + '" data-a="hab:' + f + ':1">✅ Cumpri</button><button class="' + (v === false ? 'no' : '') + '" data-a="hab:' + f + ':0">❌ Não cumpri</button></div></div>';
   };
-  return '<h1>Registrar</h1><p class="muted">Tudo em um só lugar · hoje</p>' +
-    '<h2>🏋️ Treino <span class="sm muted">· semana ' + mine.workoutsThisWeek + '/' + r.workoutsPerWeek + (mine.workoutStatus === 'bonus' ? ' ⭐' : '') + '</span></h2><div class="card"><div class="chips w">' + Object.keys(W).map(function (k) { return chip(W[k], ui.wType === k, 'wt:' + k); }).join('') + '</div><button class="btn" data-a="saveW" style="margin-top:4px">Registrar treino</button></div>' +
+  return '<h1>Registrar</h1><p class="muted">Tudo em um só lugar · hoje</p>' + dayChecklist() +
+    '<h2>🏋️ Treino <span class="sm muted">· semana ' + mine.workoutsThisWeek + '/' + r.workoutsPerWeek + (mine.workoutStatus === 'bonus' ? ' ⭐' : '') + '</span></h2><div class="card"><div class="chips w">' + Object.keys(W).map(function (k) { return chip(W[k], ui.wType === k, 'wt:' + k); }).join('') + '</div>' + photoPicker() + '<button class="btn" data-a="saveW" style="margin-top:8px">📸 Registrar treino</button></div>' +
     '<h2>🏃 Cardio <span class="sm muted">· semana ' + mine.cardioThisWeek + '/' + r.cardioPerWeek + '</span></h2><div class="card"><div class="chips w">' + Object.keys(C).map(function (k) { return chip(C[k], ui.cType === k, 'ct:' + k); }).join('') + '</div>' +
     '<div class="grid2" style="margin-top:6px">' + field('cmin', 'DURAÇÃO (MIN)', 'inputmode="numeric" placeholder="30"') + field('ctime', 'HORÁRIO', 'placeholder="07:30"') + '</div>' + field('cnote', 'OBSERVAÇÃO (OPCIONAL)', 'placeholder="Como foi?"') +
     '<button class="btn" data-a="saveC" style="margin-top:0">Registrar cardio</button><div class="tiny muted center" style="margin-top:8px">Mínimo de ' + r.cardioMinMinutes + ' min para pontuar</div></div>' +
     '<h2>💧 Água</h2><div class="card"><div class="row">' + ring(pct(water, r.waterGoalMl), 96, 9, water >= r.waterGoalMl ? 'var(--ok)' : 'var(--rose)', '<b class="disp">' + fmtL(water) + ' L</b><span class="tiny muted">de ' + fmtL(r.waterGoalMl) + ' L</span>') + '<div class="grow">' + (water >= r.waterGoalMl ? '<b class="ok">💧 META CONCLUÍDA!</b>' : '<div class="muted sm">Faltam ' + (r.waterGoalMl - water) + ' ml</div>') + '</div></div>' +
     '<div class="chips w" style="margin-top:12px">' + [250, 500, 750, 1000].map(function (ml) { return chip(ml >= 1000 ? '+1 L' : '+' + ml + ' ml', false, 'w:' + ml); }).join('') + chip('↩︎ −250', false, 'w:-250') + chip('Zerar', false, 'w:0') + '</div></div>' +
-    '<h2>🍫 Zero doce</h2>' + hab('noSweets', mine.sweetsStreak, mine.bestSweetsStreak, 'sem doce') + '<h2>🍺 Zero álcool</h2>' + hab('noAlcohol', mine.alcoholStreak, mine.bestAlcoholStreak, 'sem álcool');
+    '<h2>🍫 Zero doce</h2>' + hab('noSweets', mine.sweetsStreak, mine.bestSweetsStreak, 'sem doce') + '<h2>🍺 Zero álcool</h2>' + hab('noAlcohol', mine.alcoholStreak, mine.bestAlcoholStreak, 'sem álcool') + weekChecklist();
 };
 
 V.calendar = function () {
@@ -740,7 +795,7 @@ V.group = function () {
   var r = rules(), c = challenge(), isAdmin = g.adminId === me(), EM = { like: '❤️', fire: '🔥', muscle: '💪', clap: '👏' };
   var feed = S.acts.slice().sort(function (a, b) { return b.createdAt - a.createdAt; }).slice(0, 20).map(function (a) {
     var rx = a.reactions || {}, cms = a.comments || [];
-    return '<div class="card act"><div class="row">' + av(a.userId, 36) + '<div class="grow"><b>' + esc(nm(a.userId)) + '</b><div class="tiny muted">' + ago(a.createdAt) + '</div></div></div><div class="txt">' + esc(a.text) + '</div><div class="row wrap" style="gap:6px">' +
+    return '<div class="card act"><div class="row">' + av(a.userId, 36) + '<div class="grow"><b>' + esc(nm(a.userId)) + '</b><div class="tiny muted">' + ago(a.createdAt) + '</div></div></div><div class="txt">' + esc(a.text) + '</div>' + (a.photo ? '<img class="proof" loading="lazy" src="' + a.photo + '" alt="Foto do treino">' : '') + '<div class="row wrap" style="gap:6px">' +
       Object.keys(EM).map(function (k) { var l = rx[k] || []; return '<button class="react' + (l.indexOf(me()) >= 0 ? ' on' : '') + '" data-a="react:' + a.id + ':' + k + '">' + EM[k] + (l.length ? ' ' + l.length : '') + '</button>'; }).join('') +
       '<button class="react" data-a="open:' + a.id + '">💬 ' + cms.length + '</button></div>' +
       (ui.open === a.id ? cms.map(function (m) { return '<div class="cmt"><b class="sm">' + esc(nm(m.userId)) + '</b><div class="sm">' + esc(m.text) + '</div></div>'; }).join('') + '<div class="row" style="margin-top:8px"><input class="i" id="cm_' + a.id + '" value="' + esc(ui.f['cm_' + a.id] || '') + '" placeholder="Comentar..." style="margin-top:0"><button class="btn sm" data-a="cmt:' + a.id + '">Enviar</button></div>' : '') + '</div>';
@@ -755,14 +810,17 @@ V.group = function () {
       '<div class="sm muted" style="margin:4px 0 8px">Pontos</div><div class="grid2">' + num('p_w', '🏋️ TREINO', 10) + num('p_wb', '⭐ BÔNUS', 5) + num('p_c', '🏃 CARDIO', 5) + num('p_a', '💧 ÁGUA', 5) + num('p_s', '🍫 DOCE', 5) + num('p_l', '🍺 ÁLCOOL', 5) + '</div><button class="btn" data-a="saveAdmin">Salvar regras</button>' +
       '<div class="grid2" style="margin-top:12px"><button class="btn sec" style="margin:0" data-a="cst:active">' + (ui.confirm === 'st:active' ? 'Toque de novo' : '▶️ Iniciar hoje') + '</button><button class="btn danger" style="margin:0" data-a="cst:ended">' + (ui.confirm === 'st:ended' ? 'Toque de novo' : '🏁 Encerrar') + '</button></div></div>';
   }
-  var members = g.memberIds.map(function (id) { return '<div class="card row" style="padding:12px 14px">' + av(id, 40) + '<b class="grow">' + esc(nm(id)) + (id === g.adminId ? ' 👑' : '') + (id === me() ? ' <span class="muted">(você)</span>' : '') + '</b>' + (isAdmin && id !== g.adminId ? '<button class="link bad" data-a="rm:' + id + '">' + (ui.confirm === 'rm:' + id ? 'Confirmar' : 'Remover') + '</button>' : '') + '</div>'; }).join('');
+  var mkMembers = function (manage) { return g.memberIds.map(function (id) { return '<div class="card row" style="padding:12px 14px">' + av(id, 40) + '<b class="grow">' + esc(nm(id)) + (id === g.adminId ? ' 👑' : '') + (id === me() ? ' <span class="muted">(você)</span>' : '') + '</b>' + (manage && isAdmin && id !== g.adminId ? '<button class="link bad" data-a="rm:' + id + '">' + (ui.confirm === 'rm:' + id ? 'Confirmar' : 'Remover') + '</button>' : '') + '</div>'; }).join(''); };
+  var members = mkMembers(false);
+  if (ui.sub === 'settings') return '<button class="link" data-a="sub:">← Voltar ao grupo</button><h1>Ajustes ⚙️</h1><div class="sm muted">' + esc(g.name) + '</div>' + 
+    '<h2>Regras</h2><div class="card"><p>🏋️ Mínimo de <b>' + r.workoutsPerWeek + ' treinos</b> por semana · ' + r.points.workout + ' pts cada, 5º treino +' + r.points.workoutBonus + '</p><p>🏃 <b>' + r.cardioPerWeek + ' cardios</b> por semana de ' + r.cardioMinMinutes + '+ min · ' + r.points.cardio + ' pts</p><p>💧 <b>' + fmtL(r.waterGoalMl) + ' L</b> por dia · ' + r.points.water + ' pts</p><p>🍫 Zero doces · ' + r.points.noSweets + ' pts/dia</p><p>🍺 Zero álcool · ' + r.points.noAlcohol + ' pts/dia</p></div>' + (isAdmin ? adm : '') + '<h2>Participantes (' + g.memberIds.length + ')</h2>' + mkMembers(true) + 
+    '<h2>Outro grupo</h2><div class="card">' + field('jcode', 'ENTRAR COM CÓDIGO', 'autocapitalize="characters" placeholder="D30-XXXXXX"') + '<button class="btn sec" data-a="join" style="margin-top:0">Entrar</button>' + field('gname', 'OU CRIAR NOVO GRUPO', 'placeholder="Nome do grupo"') + '<button class="btn sec" data-a="create" style="margin-top:0">Criar grupo</button></div>';
   return '<h1>Grupo 👥</h1>' +
     '<div class="hero" style="margin-top:12px"><div class="disp" style="font-size:1.35rem;font-weight:800">' + esc(g.name) + '</div><div class="sm" style="opacity:.85">' + formatBR(c.startDate) + ' → ' + formatBR(addDays(c.startDate, c.durationDays - 1)) + ' · ' + c.durationDays + ' dias · ' + (c.status === 'ended' ? '🏁 Encerrado' : '🟢 Em andamento') + '</div>' +
     '<div class="tiny" style="margin-top:14px;font-weight:800;letter-spacing:.1em;opacity:.8">CÓDIGO DE CONVITE</div><div class="code">' + esc(g.inviteCode) + '</div><div class="grid2" style="margin-top:12px"><button class="btn sec" style="margin:0" data-a="copy">Copiar</button><button class="btn" style="margin:0" data-a="share">Compartilhar</button></div></div>' +
     (S.groups.length > 1 ? '<h2>Meus grupos</h2><div class="chips">' + S.groups.map(function (x) { return chip(esc(x.name), x.id === g.id, 'grp:' + x.id); }).join('') + '</div>' : '') +
     '<h2>Atividades</h2>' + (feed || '<p class="muted sm">Sem atividades ainda.</p>') + '<h2>Participantes (' + g.memberIds.length + ')</h2>' + members +
-    '<h2>Regras</h2><div class="card"><p>🏋️ Mínimo de <b>' + r.workoutsPerWeek + ' treinos</b> por semana · ' + r.points.workout + ' pts cada, 5º treino +' + r.points.workoutBonus + '</p><p>🏃 <b>' + r.cardioPerWeek + ' cardios</b> por semana de ' + r.cardioMinMinutes + '+ min · ' + r.points.cardio + ' pts</p><p>💧 <b>' + fmtL(r.waterGoalMl) + ' L</b> por dia · ' + r.points.water + ' pts</p><p>🍫 Zero doces · ' + r.points.noSweets + ' pts/dia</p><p>🍺 Zero álcool · ' + r.points.noAlcohol + ' pts/dia</p></div>' + adm +
-    '<h2>Outro grupo</h2><div class="card">' + field('jcode', 'ENTRAR COM CÓDIGO', 'autocapitalize="characters" placeholder="D30-XXXXXX"') + '<button class="btn sec" data-a="join" style="margin-top:0">Entrar</button>' + field('gname', 'OU CRIAR NOVO GRUPO', 'placeholder="Nome do grupo"') + '<button class="btn sec" data-a="create" style="margin-top:0">Criar grupo</button></div>';
+    '<button class="btn sec" data-a="sub:settings" style="margin-top:16px">⚙️ Ajustes e regras do grupo</button>';
 };
 
 V.profile = function () {
@@ -818,7 +876,7 @@ function render() {
 document.addEventListener('input', function (e) { var t = e.target; if (t && t.id && t.classList && t.classList.contains('i')) ui.f[t.id] = t.value; });
 document.addEventListener('change', function (e) {
   var t = e.target; if (!t || !t.files || !t.files[0]) return;
-  resizePhoto(t.files[0], function (url) { if (t.id === 'photoReg') { ui.photo = url; render(); } else if (t.id === 'photoProf') saveProfile({ photo: url }); });
+  resizePhoto(t.files[0], function (url) { if (t.id === 'photoReg') { ui.photo = url; render(); } else if (t.id === 'photoProf') saveProfile({ photo: url }); else if (t.id === 'photoW') { ui.wPhoto = url; render(); } }, (t.id === 'photoW') ? 720 : 0);
 });
 document.addEventListener('keydown', function (e) {
   if (e.key !== 'Enter' || !e.target || e.target.tagName !== 'INPUT') return; var id = e.target.id;
@@ -827,12 +885,15 @@ document.addEventListener('keydown', function (e) {
 document.addEventListener('click', function (e) {
   var el = e.target.closest ? e.target.closest('[data-a]') : null; if (!el) return;
   var p = el.getAttribute('data-a').split(':'), a = p[0];
-  if (a === 'tab') { ui.tab = p[1]; ui.confirm = ''; window.scrollTo(0, 0); render(); }
+  if (a === 'tab') { ui.tab = p[1]; ui.sub = ''; ui.confirm = ''; window.scrollTo(0, 0); render(); }
   else if (a === 'mode') { ui.mode = p[1]; ui.err = ''; render(); }
   else if (a === 'login') doLogin(); else if (a === 'register') doRegister(); else if (a === 'google') doGoogle(); else if (a === 'reset') doReset();
   else if (a === 'filter') { ui.filter = p[1]; render(); }
   else if (a === 'day') { ui.day = p[1]; render(); }
   else if (a === 'wt') { ui.wType = p[1]; render(); } else if (a === 'ct') { ui.cType = p[1]; render(); }
+  else if (a === 'sub') { ui.sub = p[1] || ''; ui.confirm = ''; window.scrollTo(0, 0); render(); }
+  else if (a === 'wk') { ui.wk = parseInt(p[1], 10); render(); }
+  else if (a === 'tg') { var tf = p[2], cv = (myLog(p[1]) || {})[tf], o2 = {}; o2[tf] = cv === undefined ? true : cv === true ? false : firebase.firestore.FieldValue.delete(); setLog(p[1], o2); }
   else if (a === 'saveW') addWorkout(); else if (a === 'saveC') addCardio();
   else if (a === 'w') addWater(parseInt(p[1], 10));
   else if (a === 'hab') setLog(TODAY, (function () { var o = {}; o[p[1]] = p[2] === '1'; return o; })());
