@@ -40,7 +40,8 @@ html{font-size:clamp(16px,calc(100vw / 22.5),20px);-webkit-text-size-adjust:100%
 :root[data-theme="dark"]{color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{background:var(--bg)}
-body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:0.9375rem;line-height:1.45;padding-inline:1rem;padding-block:calc(0.875rem + env(safe-area-inset-top,0px)) calc(6.875rem + env(safe-area-inset-bottom,0px))}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:0.9375rem;line-height:1.45}
+#app{position:fixed;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;padding-inline:1rem;padding-block:calc(0.875rem + env(safe-area-inset-top,0px)) calc(6.875rem + env(safe-area-inset-bottom,0px))}
 main{max-width:35rem;margin-inline:auto}
 h1,h2,h3{font-family:var(--f-display);margin:0;letter-spacing:-.01em}
 h1{font-size:1.45rem;line-height:1.15} h2{font-size:1.05rem;margin:1.625rem 0 0.75rem} h3{font-size:1rem}
@@ -939,7 +940,7 @@ function doRender() {
   try {
     TODAY = todayISO(); applyTheme();
     var chipScroll = [].map.call(document.querySelectorAll('.chips'), function (e) { return e.scrollLeft; });
-    var a = document.activeElement, focusId = a && a.id && a.tagName === 'INPUT' && a.type !== 'file' ? a.id : null, ss = 0, y = window.scrollY, body = '';
+    var a = document.activeElement, focusId = a && a.id && a.tagName === 'INPUT' && a.type !== 'file' ? a.id : null, ss = 0, y = $app.scrollTop, body = '';
     try { ss = focusId ? a.selectionStart : 0; } catch (e) { ss = 0; }
     if (!S.ready) body = '<div class="busy"><div class="spin"></div></div>';
     else if (!auth) body = '<main><div class="card center"><h3>Não foi possível carregar o Firebase</h3><p class="muted sm">Verifique a internet e recarregue a página.</p></div></main>';
@@ -955,7 +956,7 @@ function doRender() {
       [].forEach.call(document.querySelectorAll('.chips'), function (e, i) { if (chipScroll[i]) e.scrollLeft = chipScroll[i]; });
       fixBars(ui.centerOn); ui.centerOn = false;
       if (focusId) { var n = document.getElementById(focusId); if (n) { n.focus(); try { n.setSelectionRange(ss, ss); } catch (e) {} } }
-      window.scrollTo(0, y);
+      $app.scrollTop = y;
     }
   } catch (e) { console.error(e); } finally { rendering = false; }
 }
@@ -973,14 +974,14 @@ document.addEventListener('keydown', function (e) {
 document.addEventListener('click', function (e) {
   var el = e.target.closest ? e.target.closest('[data-a]') : null; if (!el) return;
   var p = el.getAttribute('data-a').split(':'), a = p[0];
-  if (a === 'tab') { ui.tab = p[1]; lsSet('d30-tab', p[1]); ui.sub = ''; ui.confirm = ''; window.scrollTo(0, 0); render(); }
+  if (a === 'tab') { ui.tab = p[1]; lsSet('d30-tab', p[1]); ui.sub = ''; ui.confirm = ''; $app.scrollTop = 0; render(); }
   else if (a === 'mode') { ui.mode = p[1]; ui.err = ''; render(); }
   else if (a === 'login') doLogin(); else if (a === 'register') doRegister(); else if (a === 'google') doGoogle(); else if (a === 'reset') doReset();
   else if (a === 'filter') { ui.filter = p[1]; ui.centerOn = true; render(); }
   else if (a === 'cs') { var bc = el.parentNode.querySelector('.chips'); if (bc) bc.scrollBy({ left: parseInt(p[1], 10) * 170, behavior: 'smooth' }); }
   else if (a === 'day') { ui.day = p[1]; render(); }
   else if (a === 'wt') { ui.wType = p[1]; render(); } else if (a === 'ct') { ui.cType = p[1]; render(); }
-  else if (a === 'sub') { ui.sub = p[1] || ''; ui.confirm = ''; window.scrollTo(0, 0); render(); }
+  else if (a === 'sub') { ui.sub = p[1] || ''; ui.confirm = ''; $app.scrollTop = 0; render(); }
   else if (a === 'wk') { ui.wk = parseInt(p[1], 10); render(); }
   else if (a === 'tg') { var tf = p[2], cv = (myLog(p[1]) || {})[tf], o2 = {}; o2[tf] = cv === undefined ? true : cv === true ? false : firebase.firestore.FieldValue.delete(); setLog(p[1], o2); }
   else if (a === 'reload') location.reload();
