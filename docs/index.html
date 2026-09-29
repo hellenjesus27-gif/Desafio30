@@ -422,7 +422,7 @@ function initFirebase() {
   try {
     if (typeof firebase === 'undefined') return false;
     firebase.initializeApp(firebaseConfig);
-    auth = firebase.auth(); db = firebase.firestore();
+    auth = firebase.auth(); db = firebase.firestore(); try { auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL); } catch (e) {}
     return true;
   } catch (e) { return false; }
 }
