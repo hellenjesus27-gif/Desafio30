@@ -474,7 +474,7 @@ function detachGroup() { groupUnsubs.forEach(function (f) { f(); }); groupUnsubs
 
 function listenGroups() {
   userUnsubs.push(db.collection('groups').where('memberIds', 'array-contains', S.user.uid).onSnapshot(function (qs) {
-    S.groups = qs.docs.map(function (d) { var g = d.data(); g.id = d.id; return g; });
+    S.groups = qs.docs.map(function (d) { var g = d.data(); g.id = d.id; return g; }).filter(function (g) { return !g.deleted; });
     var ids = S.groups.map(function (g) { return g.id; });
     if (!S.gid || ids.indexOf(S.gid) < 0) { var last = lsGet('d30-gid'); S.gid = ids.indexOf(last) >= 0 ? last : (ids[0] || null); }
     attachGroup(); render();
@@ -818,7 +818,8 @@ V.group = function () {
     Object.keys(d).forEach(function (k) { if (ui.f[k] === undefined) ui.f[k] = String(d[k]); });
     adm = '<h2>👑 Administrador</h2><div class="card">' + field('a_name', 'NOME DO GRUPO') + '<div class="grid2">' + num('a_dur', 'DURAÇÃO (DIAS)', 30) + num('r_water', 'ÁGUA (ML)', 3000) + num('r_wpw', 'TREINOS/SEMANA', 4) + num('r_wb', 'TREINO BÔNUS Nº', 5) + num('r_cpw', 'CARDIOS/SEMANA', 3) + num('r_cmin', 'CARDIO MÍN. (MIN)', 30) + '</div>' +
       '<div class="sm muted" style="margin:4px 0 8px">Pontos</div><div class="grid2">' + num('p_w', '🏋️ TREINO', 10) + num('p_wb', '⭐ BÔNUS', 5) + num('p_c', '🏃 CARDIO', 5) + num('p_a', '💧 ÁGUA', 5) + num('p_s', '🍫 DOCE', 5) + num('p_l', '🍺 ÁLCOOL', 5) + '</div><button class="btn" data-a="saveAdmin">Salvar regras</button>' +
-      '<div class="grid2" style="margin-top:12px"><button class="btn sec" style="margin:0" data-a="cst:active">' + (ui.confirm === 'st:active' ? 'Toque de novo' : '▶️ Iniciar hoje') + '</button><button class="btn danger" style="margin:0" data-a="cst:ended">' + (ui.confirm === 'st:ended' ? 'Toque de novo' : '🏁 Encerrar') + '</button></div></div>';
+      '<div class="grid2" style="margin-top:12px"><button class="btn sec" style="margin:0" data-a="cst:active">' + (ui.confirm === 'st:active' ? 'Toque de novo' : '▶️ Iniciar hoje') + '</button><button class="btn danger" style="margin:0" data-a="cst:ended">' + (ui.confirm === 'st:ended' ? 'Toque de novo' : '🏁 Encerrar') + '</button></div>' +
+      '<button class="btn danger" style="margin-top:14px" data-a="delg">' + (ui.confirm === 'delg' ? 'Toque de novo para EXCLUIR o grupo' : '🗑️ Excluir grupo') + '</button></div>';
   }
   var mkMembers = function (manage) { return g.memberIds.map(function (id) { return '<div class="card row" style="padding:12px 14px">' + av(id, 40) + '<b class="grow">' + esc(nm(id)) + (id === g.adminId ? ' 👑' : '') + (id === me() ? ' <span class="muted">(você)</span>' : '') + '</b>' + (manage && isAdmin && id !== g.adminId ? '<button class="link bad" data-a="rm:' + id + '">' + (ui.confirm === 'rm:' + id ? 'Confirmar' : 'Remover') + '</button>' : '') + '</div>'; }).join(''); };
   var members = mkMembers(false);
@@ -913,6 +914,7 @@ document.addEventListener('click', function (e) {
   else if (a === 'copy') copyText(curGroup().inviteCode); else if (a === 'share') shareInvite();
   else if (a === 'saveAdmin') saveAdmin();
   else if (a === 'cst') { var st = p[1]; ask('st:' + st, function () { var o = { status: st }; if (st === 'active') o.startDate = TODAY; grp().update(o).then(function () { say(st === 'active' ? 'Desafio iniciado ▶️' : 'Desafio encerrado 🏁'); }).catch(onErr); }); }
+  else if (a === 'delg') { ask('delg', function () { grp().update({ deleted: true }).then(function () { ui.sub = ''; ui.tab = 'home'; say('Grupo excluído 🗑️'); }).catch(onErr); }); }
   else if (a === 'rm') { var id = p[1]; ask('rm:' + id, function () { grp().update({ memberIds: firebase.firestore.FieldValue.arrayRemove(id) }).then(function () { say('Participante removido'); }).catch(onErr); }); }
   else if (a === 'del') { var col = p[1], did = p[2]; ask('del:' + did, function () { delDoc(col, did); }); }
   else if (a === 'saveName') { var n = (ui.f.pname || '').trim(); if (n) saveProfile({ name: n }); }
