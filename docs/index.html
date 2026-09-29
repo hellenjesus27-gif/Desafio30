@@ -826,12 +826,12 @@ V.group = function () {
   if (ui.sub === 'settings') return '<button class="link" data-a="sub:">← Voltar ao grupo</button><h1>Ajustes ⚙️</h1><div class="sm muted">' + esc(g.name) + '</div>' + 
     '<h2>Regras</h2><div class="card"><p>🏋️ Mínimo de <b>' + r.workoutsPerWeek + ' treinos</b> por semana · ' + r.points.workout + ' pts cada, 5º treino +' + r.points.workoutBonus + '</p><p>🏃 <b>' + r.cardioPerWeek + ' cardios</b> por semana de ' + r.cardioMinMinutes + '+ min · ' + r.points.cardio + ' pts</p><p>💧 <b>' + fmtL(r.waterGoalMl) + ' L</b> por dia · ' + r.points.water + ' pts</p><p>🍫 Zero doces · ' + r.points.noSweets + ' pts/dia</p><p>🍺 Zero álcool · ' + r.points.noAlcohol + ' pts/dia</p></div>' + (isAdmin ? adm : '') + '<h2>Participantes (' + g.memberIds.length + ')</h2>' + mkMembers(true) + 
     '<h2>Outro grupo</h2><div class="card">' + field('jcode', 'ENTRAR COM CÓDIGO', 'autocapitalize="characters" placeholder="D30-XXXXXX"') + '<button class="btn sec" data-a="join" style="margin-top:0">Entrar</button>' + field('gname', 'OU CRIAR NOVO GRUPO', 'placeholder="Nome do grupo"') + '<button class="btn sec" data-a="create" style="margin-top:0">Criar grupo</button></div>';
-  return '<h1>Grupo 👥</h1>' +
+  return '<div class="row between"><h1>Grupo 👥</h1><button class="chip" data-a="sub:settings">⚙️ Ajustes</button></div>' +
     '<div class="hero" style="margin-top:12px"><div class="disp" style="font-size:1.35rem;font-weight:800">' + esc(g.name) + '</div><div class="sm" style="opacity:.85">' + formatBR(c.startDate) + ' → ' + formatBR(addDays(c.startDate, c.durationDays - 1)) + ' · ' + c.durationDays + ' dias · ' + (c.status === 'ended' ? '🏁 Encerrado' : '🟢 Em andamento') + '</div>' +
     '<div class="tiny" style="margin-top:14px;font-weight:800;letter-spacing:.1em;opacity:.8">CÓDIGO DE CONVITE</div><div class="code">' + esc(g.inviteCode) + '</div><div class="grid2" style="margin-top:12px"><button class="btn sec" style="margin:0" data-a="copy">Copiar</button><button class="btn" style="margin:0" data-a="share">Compartilhar</button></div></div>' +
     (S.groups.length > 1 ? '<h2>Meus grupos</h2><div class="chips">' + S.groups.map(function (x) { return chip(esc(x.name), x.id === g.id, 'grp:' + x.id); }).join('') + '</div>' : '') +
     '<h2>Atividades</h2>' + (feed || '<p class="muted sm">Sem atividades ainda.</p>') + '<h2>Participantes (' + g.memberIds.length + ')</h2>' + members +
-    '<button class="btn sec" data-a="sub:settings" style="margin-top:16px">⚙️ Ajustes e regras do grupo</button>';
+    '';
 };
 
 V.profile = function () {
