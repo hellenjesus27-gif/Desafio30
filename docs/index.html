@@ -1014,6 +1014,10 @@ function A(){return document.getElementById('app');}
 document.addEventListener('touchstart',function(e){var a=A();y0=(a&&a.scrollTop<=0&&e.touches.length===1&&!e.target.closest('.chips,.tscroll,.scroller,input,textarea'))?e.touches[0].clientY:null;d=0;},{passive:true});
 document.addEventListener('touchmove',function(e){if(y0===null)return;d=e.touches[0].clientY-y0;if(d>100){y0=null;ind.style.opacity=1;location.reload();return;}if(d>0){var m=Math.min(d,110)/110;ind.style.opacity=m;ind.style.transform='translate(-50%,'+(Math.min(d,110)*0.6-64)+'px) rotate('+(d*3)+'deg)';}else{ind.style.opacity=0;}},{passive:true});
 ['touchend','touchcancel'].forEach(function(n){document.addEventListener(n,function(){if(y0!==null&&d>70){ind.style.opacity=1;location.reload();}ind.style.opacity=0;ind.style.transform='translate(-50%,-4rem)';y0=null;d=0;},{passive:true});});})();
+
+var APP_V=17;
+(function(){function chk(){try{fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){var m=t.match(/var APP_V=(\d+);/);if(m&&+m[1]>APP_V){location.replace(location.pathname+'?v='+m[1]);}}).catch(function(){});}catch(e){}}
+chk();document.addEventListener('visibilitychange',function(){if(!document.hidden)chk();});})();
 </script>
 </body>
 </html>
