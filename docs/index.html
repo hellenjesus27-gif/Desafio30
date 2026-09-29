@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <title>Desafio 30</title>
 <style>
 html{color-scheme:light}body{margin:0}
@@ -483,7 +487,7 @@ V.home = function () {
   '<h2>Meta da semana</h2><div class="card"><div class="row"><b>Treinos da semana</b>' + badge(me.workoutStatus, me.workoutsThisWeek, r) + '</div>' +
   bar(me.workoutsThisWeek, r.workoutBonusAt, me.workoutStatus === 'below' ? 'bad' : me.workoutStatus === 'met' ? 'ok' : 'gold') +
   '<div class="row" style="margin-top:14px"><b>Cardio (mín. ' + r.cardioMinMinutes + ' min)</b><span class="pill ' + (me.cardioMet ? 'ok' : 'bad') + '">' + me.cardioThisWeek + '/' + r.cardioPerWeek + (me.cardioMet ? ' ✅' : '') + '</span></div>' +
-  bar(me.cardioThisWeek, r.cardioPerWeek, me.cardioMet ? 'ok' : 'warn') + '</div><h2>Atividades recentes</h2>' + acts + '<p class="note">Prévia web com dados de demonstração. O app completo está no seu GitHub.</p>';
+  bar(me.cardioThisWeek, r.cardioPerWeek, me.cardioMet ? 'ok' : 'warn') + '</div><h2>Atividades recentes</h2>' + acts + '<p class="note"><b>Instalar no celular:</b> Android, menu ⋮ do navegador → Adicionar à tela inicial. iPhone, botão Compartilhar → Adicionar à Tela de Início.<br>Prévia com dados de demonstração.</p>';
 };
 
 V.ranking = function () {

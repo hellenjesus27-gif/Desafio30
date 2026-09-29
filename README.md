@@ -5,7 +5,7 @@ Feito com **Expo (React Native) + TypeScript** → roda em **iOS, Android e nave
 
 > ⚠️ **Estado atual:** o app funciona 100% **local** (dados salvos no aparelho, modo demonstração). Para múltiplos usuários reais compartilhando ranking, é preciso ligar o backend (Supabase) — veja a seção 5.
 
-> 🌐 **Prévia web (sem instalar nada):** https://hellenjesus27-gif.github.io/Desafio30/ — versão de demonstração que abre no navegador do celular. O código dela está em `docs/index.html`.
+> 🌐 **Prévia web (sem instalar nada):** https://hellenjesus27-gif.github.io/Desafio30/ — versão de demonstração que abre no navegador do celular. Para instalar: Android, menu ⋮ → Adicionar à tela inicial; iPhone, Compartilhar → Adicionar à Tela de Início. O código dela está em `docs/index.html`.
 
 ## 1. Regras do desafio (padrão, editáveis pelo admin)
 | Hábito | Meta | Pontos |
