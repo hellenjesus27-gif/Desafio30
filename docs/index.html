@@ -1008,6 +1008,12 @@ function boot() {
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 
+
+(function(){var y0=null,d=0,ind=document.createElement('div');ind.id='ptr';ind.textContent='⟳';ind.style.cssText='position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + .5rem);transform:translate(-50%,-4rem);width:2.4rem;height:2.4rem;border-radius:50%;background:var(--card2);color:var(--fg);display:flex;align-items:center;justify-content:center;font-size:1.3rem;z-index:40;box-shadow:var(--shadow);pointer-events:none;opacity:0';document.body.appendChild(ind);
+function A(){return document.getElementById('app');}
+document.addEventListener('touchstart',function(e){var a=A();y0=(a&&a.scrollTop<=0&&e.touches.length===1&&!e.target.closest('.chips,.tscroll,.scroller,input,textarea'))?e.touches[0].clientY:null;d=0;},{passive:true});
+document.addEventListener('touchmove',function(e){if(y0===null)return;d=e.touches[0].clientY-y0;if(d>0){var m=Math.min(d,110)/110;ind.style.opacity=m;ind.style.transform='translate(-50%,'+(Math.min(d,110)*0.6-64)+'px) rotate('+(d*3)+'deg)';}else{ind.style.opacity=0;}},{passive:true});
+document.addEventListener('touchend',function(){if(y0!==null&&d>90){ind.style.opacity=1;location.reload();}ind.style.opacity=0;ind.style.transform='translate(-50%,-4rem)';y0=null;d=0;},{passive:true});})();
 </script>
 </body>
 </html>
