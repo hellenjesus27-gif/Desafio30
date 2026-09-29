@@ -912,7 +912,7 @@ V.profile = function () {
   }
   var th = lsGet('d30-theme') || 'dark';
   html += '<h2>Aparência</h2><div class="chips">' + chip('📱 Automático', th === 'auto', 'theme:auto') + chip('☀️ Claro', th === 'light', 'theme:light') + chip('🌙 Escuro', th === 'dark', 'theme:dark') + '</div>' +
-    '<div class="card sm muted">🔔 Lembretes de água, treino e cardio chegam no app instalado (versão nativa). Na versão web, use o alarme do celular.</div><button class="btn ghost" data-a="logout">Sair da conta</button>' +
+    '<div class="card sm muted">🔔 Lembretes de água, treino e cardio chegam no app instalado (versão nativa). Na versão web, use o alarme do celular.</div><button class="btn ghost" data-a="logout">Sair da conta</button><div class="tiny muted" style="text-align:center;margin-top:10px">versão 17</div>' +
     '<div class="note">Para instalar: Android, menu ⋮ → Adicionar à tela inicial. iPhone, Compartilhar → Adicionar à Tela de Início.</div>';
   return html;
 };
