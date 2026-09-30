@@ -771,14 +771,17 @@ function lineChart(vals, invert, w, h, total) {
 
 /* ---------- Telas ---------- */
 var V = {};
+var deferredInstall = null;
+window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferredInstall = e; render(); });
+window.addEventListener('appinstalled', function () { deferredInstall = null; lsSet('d30-hint', String(Date.now() + 3650 * 864e5)); render(); });
 function isStandalone() { return !!(window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches)); }
 function installCard(dismissable) {
-  if (isStandalone() || (dismissable && lsGet('d30-hint'))) return '';
+  if (isStandalone() || (dismissable && +(lsGet('d30-hint') || 0) > Date.now())) return '';
   var isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
   return '<div class="card" style="margin:16px 0;border:2px solid var(--rose)"><h2 style="margin:0 0 4px;font-size:1.3rem">📲 Instale o Desafio 30</h2><div class="sm muted" style="margin-bottom:10px">Abre em tela cheia, com a barra embaixo, como um app de verdade.</div>' +
-    (isIOS ? '<div style="font-size:1.05rem;line-height:1.7"><b>1.</b> Toque em <b>Compartilhar</b> (o quadrado com a seta ⬆️)<br><b>2.</b> Role e toque em <b>Adicionar à Tela de Início</b><br><b>3.</b> Toque em <b>Adicionar</b></div><div class="tiny muted" style="margin-top:8px">No Safari o botão Compartilhar fica na barra de baixo. No Chrome do iPhone, fica ao lado do endereço.</div>'
+    (deferredInstall ? '<button class="btn" data-a="pwa" style="margin:0 0 10px">📲 Instalar agora</button><div class="tiny muted">Ou pelo menu do navegador:</div>' : '') + (isIOS ? '<div style="font-size:1.05rem;line-height:1.7"><b>1.</b> Toque em <b>Compartilhar</b> (o quadrado com a seta ⬆️)<br><b>2.</b> Role e toque em <b>Adicionar à Tela de Início</b><br><b>3.</b> Toque em <b>Adicionar</b></div><div class="tiny muted" style="margin-top:8px">No Safari o botão Compartilhar fica na barra de baixo. No Chrome do iPhone, fica ao lado do endereço.</div>'
       : '<div style="font-size:1.05rem;line-height:1.7"><b>Chrome:</b> toque no menu <b>⋮</b> → <b>Adicionar à tela inicial</b> (ou <b>Instalar app</b>)<br><b>Samsung Internet:</b> toque no menu <b>☰</b> → <b>Adicionar página a</b> → <b>Tela inicial</b></div>') +
-    (dismissable ? '<button class="link" data-a="hint" style="margin-top:10px">Já instalei ✓</button>' : '') + '</div>';
+    (dismissable ? '<button class="link" data-a="hint" style="margin-top:10px">Agora não</button>' : '') + '</div>';
 }
 V.auth = function () {
   var m = ui.mode, isReg = m === 'register';
@@ -994,7 +997,7 @@ V.profile = function () {
       '<h2>Histórico</h2>' + (hist.length ? hist.map(function (h) { return '<div class="card row between" style="padding:12px 14px"><div><b class="sm">' + h.t + '</b><div class="tiny muted">' + formatBR(h.date) + '</div></div><button class="link bad" data-a="del:' + h.col + ':' + h.id + '">' + (ui.confirm === 'del:' + h.id ? 'Confirmar' : 'Excluir') + '</button></div>'; }).join('') : '<p class="muted sm">Sem registros ainda.</p>');
   }
   var th = lsGet('d30-theme') || 'dark';
-  html += '<div class="card sm muted">🔔 O app ainda não envia lembretes. Use o alarme do celular para água, treino e cardio.</div><div class="tiny muted" style="text-align:center;margin-top:10px">versão 29</div>';
+  html += '<div class="card sm muted">🔔 O app ainda não envia lembretes. Use o alarme do celular para água, treino e cardio.</div><div class="tiny muted" style="text-align:center;margin-top:10px">versão 30</div>';
   return html;
 };
 
@@ -1088,7 +1091,8 @@ document.addEventListener('click', function (e) {
   else if (a === 'pedit') { ui.f.pname = S.profile.name || ''; ui.f.phandle = S.profile.handle || ''; ui.f.pbio = S.profile.bio || ''; ui.pedit = true; render(); }
   else if (a === 'pcancel') { ui.pedit = false; render(); }
   else if (a === 'theme') { lsSet('d30-theme', p[1] === 'toggle' ? (isLightTheme() ? 'dark' : 'light') : p[1]); applyTheme(); render(); }
-  else if (a === 'hint') { lsSet('d30-hint', '1'); render(); }
+  else if (a === 'hint') { lsSet('d30-hint', String(Date.now() + 864e5)); render(); }
+  else if (a === 'pwa') { if (deferredInstall) { deferredInstall.prompt(); deferredInstall.userChoice.then(function () { deferredInstall = null; render(); }); } }
   else if (a === 'logout') { if (ui.confirm !== 'logout') { ui.confirm = 'logout'; render(); } else { ui.confirm = ''; auth.signOut(); ui.tab = 'home'; } }
   else if (a === 'nologout') { ui.confirm = ''; render(); }
 });
@@ -1101,7 +1105,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 
 
 
-var APP_V=29;
+var APP_V=30;
 (function(){function chk(){try{fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){var m=t.match(/var APP_V=(\d+);/);if(m&&+m[1]>APP_V){location.replace(location.pathname+'?v='+m[1]);}}).catch(function(){});}catch(e){}}
 chk();document.addEventListener('visibilitychange',function(){if(!document.hidden)chk();});})();
 </script>
