@@ -747,7 +747,12 @@ V.home = function () {
     var v = log[field]; return '<button class="card tile" data-a="hab:' + field + ':' + (v === true ? '0' : '1') + '" style="text-align:left;font:inherit;color:inherit;cursor:pointer"><span class="k">' + ico + ' ' + label + '</span><span class="v">' + (v === true ? '✅ Cumpri' : v === false ? '❌ Não cumpri' : 'Toque p/ marcar') + '</span><span class="sm muted">🔥 ' + streak + ' ' + (streak === 1 ? 'dia' : 'dias') + '</span></button>';
   };
   var isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent), standalone = window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches), hint = '';
-  if (!standalone && !lsGet('d30-hint')) hint = '<div class="card sm" style="margin-bottom:12px;display:flex;gap:10px;align-items:center;justify-content:space-between"><span>📲 <b>Instale o app</b> para a barra ficar embaixo e abrir em tela cheia: ' + (isIOS ? 'toque em <b>Compartilhar</b> → <b>Adicionar à Tela de Início</b>.' : 'menu <b>⋮</b> → <b>Adicionar à tela inicial</b>.') + '</span><button class="link" data-a="hint">OK</button></div>';
+  if (!standalone && !lsGet('d30-hint')) {
+    hint = '<div class="card" style="margin-bottom:16px;border:2px solid var(--rose)"><h2 style="margin:0 0 4px;font-size:1.3rem">📲 Instale o Desafio 30</h2><div class="sm muted" style="margin-bottom:10px">Abre em tela cheia, com a barra embaixo, como um app de verdade.</div>' +
+      (isIOS ? '<div style="font-size:1.05rem;line-height:1.7"><b>1.</b> Toque em <b>Compartilhar</b> (o quadrado com a seta ⬆️)<br><b>2.</b> Role e toque em <b>Adicionar à Tela de Início</b><br><b>3.</b> Toque em <b>Adicionar</b></div><div class="tiny muted" style="margin-top:8px">No Safari o botão Compartilhar fica na barra de baixo. No Chrome do iPhone, fica ao lado do endereço.</div>'
+        : '<div style="font-size:1.05rem;line-height:1.7"><b>Chrome:</b> toque no menu <b>⋮</b> → <b>Adicionar à tela inicial</b> (ou <b>Instalar app</b>)<br><b>Samsung Internet:</b> toque no menu <b>☰</b> → <b>Adicionar página a</b> → <b>Tela inicial</b></div>') +
+      '<button class="link" data-a="hint" style="margin-top:10px">Já instalei ✓</button></div>';
+  }
   return hint + '<div class="row between" style="margin-bottom:16px"><div class="row" data-a="tab:profile" style="cursor:pointer">' + av(me(), 48) + '<div><h1>Olá, ' + esc((S.profile.name || '').split(' ')[0]) + '! 👋</h1><div class="sm muted">' + esc(g.name) + '</div></div></div>' +
     ring(pct(dn, c.durationDays), 58, 6, 'var(--rose)', '<b class="disp" style="font-size:.9rem">' + dn + '</b><span class="tiny muted">/' + c.durationDays + '</span>') + '</div>' +
     '<div class="hero"><div class="row between"><div><div class="tiny" style="font-weight:800;letter-spacing:.1em;opacity:.8">SUA POSIÇÃO</div><div class="num">#' + pos + '</div><div class="sm" style="opacity:.8">de ' + rank.length + ' participantes</div></div>' +
@@ -920,8 +925,7 @@ V.profile = function () {
   }
   var th = lsGet('d30-theme') || 'dark';
   html += '<h2>Aparência</h2><div class="chips">' + chip('📱 Automático', th === 'auto', 'theme:auto') + chip('☀️ Claro', th === 'light', 'theme:light') + chip('🌙 Escuro', th === 'dark', 'theme:dark') + '</div>' +
-    '<div class="card sm muted">🔔 Lembretes de água, treino e cardio chegam no app instalado (versão nativa). Na versão web, use o alarme do celular.</div><div class="tiny muted" style="text-align:center;margin-top:10px">versão 22</div>' +
-    '<div class="note">Para instalar: Android, menu ⋮ → Adicionar à tela inicial. iPhone, Compartilhar → Adicionar à Tela de Início.</div>';
+    '<div class="card sm muted">🔔 O app ainda não envia lembretes. Use o alarme do celular para água, treino e cardio.</div><div class="tiny muted" style="text-align:center;margin-top:10px">versão 23</div>';
   return html;
 };
 
@@ -1023,7 +1027,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 
 
 
-var APP_V=22;
+var APP_V=23;
 (function(){function chk(){try{fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){var m=t.match(/var APP_V=(\d+);/);if(m&&+m[1]>APP_V){location.replace(location.pathname+'?v='+m[1]);}}).catch(function(){});}catch(e){}}
 chk();document.addEventListener('visibilitychange',function(){if(!document.hidden)chk();});})();
 </script>
