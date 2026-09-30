@@ -3,6 +3,10 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function signedIn() { return request.auth != null; }
+    function isGroupAdmin(gid) {
+      return signedIn() &&
+        get(/databases/$(database)/documents/groups/$(gid)).data.adminId == request.auth.uid;
+    }
     function isMember(gid) {
       return signedIn() &&
         request.auth.uid in get(/databases/$(database)/documents/groups/$(gid)).data.memberIds;
@@ -39,24 +43,26 @@ service cloud.firestore {
       match /workouts/{id} {
         allow read: if isMember(gid);
         allow create: if isMember(gid) && request.resource.data.userId == request.auth.uid;
-        allow delete: if isMember(gid) && resource.data.userId == request.auth.uid;
+        allow delete: if isMember(gid) && (resource.data.userId == request.auth.uid || isGroupAdmin(gid));
       }
       match /cardios/{id} {
         allow read: if isMember(gid);
         allow create: if isMember(gid) && request.resource.data.userId == request.auth.uid;
-        allow delete: if isMember(gid) && resource.data.userId == request.auth.uid;
+        allow delete: if isMember(gid) && (resource.data.userId == request.auth.uid || isGroupAdmin(gid));
       }
       match /logs/{id} {
         allow read: if isMember(gid);
         allow create, update: if isMember(gid)
           && request.resource.data.userId == request.auth.uid
           && id == request.auth.uid + '_' + request.resource.data.date;
+        allow delete: if isMember(gid) && (id.matches(request.auth.uid + '_.*') || isGroupAdmin(gid));
       }
       match /activities/{id} {
         allow read: if isMember(gid);
         allow create: if isMember(gid) && request.resource.data.userId == request.auth.uid;
         allow update: if isMember(gid)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'comments']);
+        allow delete: if isMember(gid) && (resource.data.userId == request.auth.uid || isGroupAdmin(gid));
       }
     }
   }
