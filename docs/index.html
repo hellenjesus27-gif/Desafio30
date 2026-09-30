@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#08080b">
-<meta name="color-scheme" content="dark">
+<meta name="color-scheme" content="dark light">
 <title>Desafio 30</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -893,7 +893,7 @@ V.group = function () {
 };
 
 V.profile = function () {
-  var g = curGroup(), pr = S.profile, html = '<div style="display:flex;justify-content:flex-end;align-items:center;gap:12px">' + (ui.confirm === 'logout' ? '<span class="sm">Sair da conta?</span><button class="link" data-a="nologout" style="font-size:.85rem;padding:0;color:var(--fg)">Cancelar</button><button class="link" data-a="logout" style="font-size:.85rem;padding:0;color:var(--bad)">Sim, sair</button>' : '<button class="link" data-a="logout" style="font-size:.8rem;font-weight:600;opacity:.75;padding:0">Sair</button>') + '</div>' +
+  var g = curGroup(), pr = S.profile, html = '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><button class="link" data-a="theme:toggle" aria-label="Trocar tema" style="font-size:1.25rem;padding:0;line-height:1">' + (isLightTheme() ? '🌙' : '☀️') + '</button><div style="display:flex;align-items:center;gap:12px">' + (ui.confirm === 'logout' ? '<span class="sm">Sair da conta?</span><button class="link" data-a="nologout" style="font-size:.85rem;padding:0;color:var(--fg)">Cancelar</button><button class="link" data-a="logout" style="font-size:.85rem;padding:0;color:var(--bad)">Sim, sair</button>' : '<button class="link" data-a="logout" style="font-size:.8rem;font-weight:600;opacity:.75;padding:0">Sair</button>') + '</div></div>' +
     '<div class="center"><label for="photoProf" style="cursor:pointer;display:inline-block">' + av(me(), 96) + '</label><input type="file" id="photoProf" accept="image/*" hidden><div class="sm muted" style="margin-top:4px">Toque na foto para trocar</div></div>';
   if (ui.pedit) {
     html += '<div class="card" style="margin-top:14px">' + field('pname', 'NOME', 'maxlength="40"') + field('phandle', '@ (OPCIONAL)', 'maxlength="24" placeholder="seunome" autocapitalize="none" autocorrect="off"') + field('pbio', 'RECADO (OPCIONAL)', 'maxlength="80" placeholder="Ex.: Foco total nos 30 dias 💪"') +
@@ -924,13 +924,13 @@ V.profile = function () {
       '<h2>Histórico</h2>' + (hist.length ? hist.map(function (h) { return '<div class="card row between" style="padding:12px 14px"><div><b class="sm">' + h.t + '</b><div class="tiny muted">' + formatBR(h.date) + '</div></div><button class="link bad" data-a="del:' + h.col + ':' + h.id + '">' + (ui.confirm === 'del:' + h.id ? 'Confirmar' : 'Excluir') + '</button></div>'; }).join('') : '<p class="muted sm">Sem registros ainda.</p>');
   }
   var th = lsGet('d30-theme') || 'dark';
-  html += '<h2>Aparência</h2><div class="chips">' + chip('📱 Automático', th === 'auto', 'theme:auto') + chip('☀️ Claro', th === 'light', 'theme:light') + chip('🌙 Escuro', th === 'dark', 'theme:dark') + '</div>' +
-    '<div class="card sm muted">🔔 O app ainda não envia lembretes. Use o alarme do celular para água, treino e cardio.</div><div class="tiny muted" style="text-align:center;margin-top:10px">versão 23</div>';
+  html += '<div class="card sm muted">🔔 O app ainda não envia lembretes. Use o alarme do celular para água, treino e cardio.</div><div class="tiny muted" style="text-align:center;margin-top:10px">versão 24</div>';
   return html;
 };
 
 var TABS = [['home', '🏠', 'Início'], ['ranking', '🏆', 'Ranking'], ['register', '＋', 'Registrar'], ['group', '👥', 'Grupo'], ['profile', '👤', 'Perfil']];
-function applyTheme() { var t = lsGet('d30-theme') || 'dark', el = document.documentElement; if (t === 'auto') el.removeAttribute('data-theme'); else el.setAttribute('data-theme', t); }
+function isLightTheme() { var t = lsGet('d30-theme') || 'dark'; return t === 'light' || (t === 'auto' && window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches); }
+function applyTheme() { var t = lsGet('d30-theme') || 'dark', el = document.documentElement, lt = isLightTheme(); if (t === 'auto') el.removeAttribute('data-theme'); else el.setAttribute('data-theme', t); [['color-scheme', lt ? 'light' : 'dark'], ['theme-color', lt ? '#f7f4f6' : '#08080b']].forEach(function (m) { var e = document.querySelector('meta[name="' + m[0] + '"]'); if (e) e.setAttribute('content', m[1]); }); }
 
 function updArrows(bar) {
   var c = bar.querySelector('.chips'), l = bar.querySelector('.arr.l'), r = bar.querySelector('.arr.r'); if (!c) return;
@@ -1013,7 +1013,7 @@ document.addEventListener('click', function (e) {
   else if (a === 'saveName') { var n = (ui.f.pname || '').trim(), h = (ui.f.phandle || '').trim().replace(/^@+/, '').replace(/[^A-Za-z0-9._]/g, '').slice(0, 24), bi = (ui.f.pbio || '').trim().slice(0, 80); if (n) { ui.pedit = false; saveProfile({ name: n, handle: h, bio: bi }); } else say('Coloque um nome'); }
   else if (a === 'pedit') { ui.f.pname = S.profile.name || ''; ui.f.phandle = S.profile.handle || ''; ui.f.pbio = S.profile.bio || ''; ui.pedit = true; render(); }
   else if (a === 'pcancel') { ui.pedit = false; render(); }
-  else if (a === 'theme') { lsSet('d30-theme', p[1]); render(); }
+  else if (a === 'theme') { lsSet('d30-theme', p[1] === 'toggle' ? (isLightTheme() ? 'dark' : 'light') : p[1]); applyTheme(); render(); }
   else if (a === 'hint') { lsSet('d30-hint', '1'); render(); }
   else if (a === 'logout') { if (ui.confirm !== 'logout') { ui.confirm = 'logout'; render(); } else { ui.confirm = ''; auth.signOut(); ui.tab = 'home'; } }
   else if (a === 'nologout') { ui.confirm = ''; render(); }
@@ -1027,7 +1027,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 
 
 
-var APP_V=23;
+var APP_V=24;
 (function(){function chk(){try{fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){var m=t.match(/var APP_V=(\d+);/);if(m&&+m[1]>APP_V){location.replace(location.pathname+'?v='+m[1]);}}).catch(function(){});}catch(e){}}
 chk();document.addEventListener('visibilitychange',function(){if(!document.hidden)chk();});})();
 </script>
