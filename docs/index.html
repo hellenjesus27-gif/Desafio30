@@ -888,7 +888,7 @@ V.group = function () {
 };
 
 V.profile = function () {
-  var g = curGroup(), pr = S.profile, html = '<div style="display:flex;justify-content:flex-end"><button class="link" data-a="logout" style="font-size:.8rem;font-weight:600;opacity:.75;padding:0">Sair</button></div>' +
+  var g = curGroup(), pr = S.profile, html = '<div style="display:flex;justify-content:flex-end;align-items:center;gap:12px">' + (ui.confirm === 'logout' ? '<span class="sm">Sair da conta?</span><button class="link" data-a="nologout" style="font-size:.85rem;padding:0;color:var(--fg)">Cancelar</button><button class="link" data-a="logout" style="font-size:.85rem;padding:0;color:var(--bad)">Sim, sair</button>' : '<button class="link" data-a="logout" style="font-size:.8rem;font-weight:600;opacity:.75;padding:0">Sair</button>') + '</div>' +
     '<div class="center"><label for="photoProf" style="cursor:pointer;display:inline-block">' + av(me(), 96) + '</label><input type="file" id="photoProf" accept="image/*" hidden><div class="sm muted" style="margin-top:4px">Toque na foto para trocar</div></div>';
   if (ui.pedit) {
     html += '<div class="card" style="margin-top:14px">' + field('pname', 'NOME', 'maxlength="40"') + field('phandle', '@ (OPCIONAL)', 'maxlength="24" placeholder="seunome" autocapitalize="none" autocorrect="off"') + field('pbio', 'RECADO (OPCIONAL)', 'maxlength="80" placeholder="Ex.: Foco total nos 30 dias 💪"') +
@@ -920,7 +920,7 @@ V.profile = function () {
   }
   var th = lsGet('d30-theme') || 'dark';
   html += '<h2>Aparência</h2><div class="chips">' + chip('📱 Automático', th === 'auto', 'theme:auto') + chip('☀️ Claro', th === 'light', 'theme:light') + chip('🌙 Escuro', th === 'dark', 'theme:dark') + '</div>' +
-    '<div class="card sm muted">🔔 Lembretes de água, treino e cardio chegam no app instalado (versão nativa). Na versão web, use o alarme do celular.</div><div class="tiny muted" style="text-align:center;margin-top:10px">versão 21</div>' +
+    '<div class="card sm muted">🔔 Lembretes de água, treino e cardio chegam no app instalado (versão nativa). Na versão web, use o alarme do celular.</div><div class="tiny muted" style="text-align:center;margin-top:10px">versão 22</div>' +
     '<div class="note">Para instalar: Android, menu ⋮ → Adicionar à tela inicial. iPhone, Compartilhar → Adicionar à Tela de Início.</div>';
   return html;
 };
@@ -1011,7 +1011,8 @@ document.addEventListener('click', function (e) {
   else if (a === 'pcancel') { ui.pedit = false; render(); }
   else if (a === 'theme') { lsSet('d30-theme', p[1]); render(); }
   else if (a === 'hint') { lsSet('d30-hint', '1'); render(); }
-  else if (a === 'logout') { auth.signOut(); ui.tab = 'home'; }
+  else if (a === 'logout') { if (ui.confirm !== 'logout') { ui.confirm = 'logout'; render(); } else { ui.confirm = ''; auth.signOut(); ui.tab = 'home'; } }
+  else if (a === 'nologout') { ui.confirm = ''; render(); }
 });
 function boot() {
   $app = document.getElementById('app'); applyTheme(); render();
@@ -1022,7 +1023,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 
 
 
-var APP_V=21;
+var APP_V=22;
 (function(){function chk(){try{fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){var m=t.match(/var APP_V=(\d+);/);if(m&&+m[1]>APP_V){location.replace(location.pathname+'?v='+m[1]);}}).catch(function(){});}catch(e){}}
 chk();document.addEventListener('visibilitychange',function(){if(!document.hidden)chk();});})();
 </script>
