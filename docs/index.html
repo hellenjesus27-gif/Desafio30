@@ -553,7 +553,12 @@ function myLog(date) { return S.days.filter(function (d) { return d.userId === m
 function say(msg) { ui.toast = msg; render(); clearTimeout(say.t); say.t = setTimeout(function () { ui.toast = ''; render(); }, 2400); }
 function grp() { return db.collection('groups').doc(S.gid); }
 function post(text) { return grp().collection('activities').add({ userId: me(), text: text, createdAt: Date.now(), reactions: {}, comments: [] }); }
+function mirOff() { try { return JSON.parse(lsGet('d30-mir') || '[]'); } catch (e) { return []; } }
+function mirrorTargets() { var off = mirOff(); return S.groups.filter(function (g) { return g.id !== S.gid && off.indexOf(g.id) < 0; }); }
+function gRules(g) { var r = g.rules || {}, out = Object.assign({}, DEFAULT_RULES, r); out.points = Object.assign({}, DEFAULT_RULES.points, r.points || {}); return out; }
+function gcol(g, c) { return db.collection('groups').doc(g.id).collection(c); }
 function setLog(date, patch) {
+  if (date === TODAY) mirrorTargets().forEach(function (g) { var pt = Object.assign({}, patch); delete pt.waterMl; if (Object.keys(pt).length) gcol(g, 'logs').doc(me() + '_' + date).set(Object.assign({ userId: me(), date: date }, pt), { merge: true }).catch(onErr); });
   var ex = S.days.filter(function (d) { return d.userId === me() && d.date === date; })[0];
   if (!ex) { ex = { id: me() + '_' + date, userId: me(), date: date }; S.days.push(ex); }
   Object.keys(patch).forEach(function (k) { var v = patch[k]; if (v && typeof v === 'object') delete ex[k]; else ex[k] = v; });
@@ -564,18 +569,27 @@ function setLog(date, patch) {
 function addWater(ml) {
   var r = rules(), cur = (myLog(TODAY) || {}).waterMl || 0, next = ml === 0 ? 0 : Math.max(0, cur + ml);
   setLog(TODAY, { waterMl: next });
+  mirrorTargets().forEach(function (g) { var ref = gcol(g, 'logs').doc(me() + '_' + TODAY); ref.get().then(function (d) { var c = (d.exists && d.data().waterMl) || 0; return ref.set({ userId: me(), date: TODAY, waterMl: ml === 0 ? 0 : Math.max(0, c + ml) }, { merge: true }); }).catch(onErr); });
   if (cur < r.waterGoalMl && next >= r.waterGoalMl) { post(nm(me()) + ' bateu a meta de ' + fmtL(r.waterGoalMl) + ' L de água 💧'); say('💧 META CONCLUÍDA!'); }
 }
 var WT = { musculacao: '🏋️ Musculação', funcional: '🤸 Funcional', crossfit: '🔱 Crossfit', pilates: '🧘 Pilates', corrida: '🏃 Corrida', natacao: '🏊 Natação', danca: '💃 Dança', esporte: '⚽ Esporte', outro: '✨ Outro' };
 function addWorkout() {
   if (S.workouts.some(function (x) { return x.userId === me() && x.date === TODAY; })) return say('Você já registrou o treino de hoje ✅');
   if (!ui.wPhoto) return say('Tire uma foto do treino 📸 (obrigatória)');
-  var r = rules(), before = computeUserStats(me(), data(), challenge(), TODAY), n = before.workoutsThisWeek + 1, photo = ui.wPhoto;
+  var r = rules(), before = computeUserStats(me(), data(), challenge(), TODAY), n = before.workoutsThisWeek + 1, photo = ui.wPhoto, wt = ui.wType;
   var aref = grp().collection('activities').doc();
   S.workouts.push({ id: 'tmp' + Date.now(), userId: me(), date: TODAY, type: ui.wType, createdAt: Date.now() });
   S.acts.push({ id: aref.id, userId: me(), text: nm(me()) + ' treinou · ' + WT[ui.wType], createdAt: Date.now(), reactions: {}, comments: [], photo: photo });
   aref.set({ userId: me(), text: nm(me()) + ' treinou · ' + WT[ui.wType] + (n >= r.workoutBonusAt ? ' ⭐' : ''), createdAt: Date.now(), reactions: {}, comments: [], photo: photo, kind: 'workout' }).catch(onErr);
   grp().collection('workouts').add({ userId: me(), date: TODAY, type: ui.wType, createdAt: Date.now(), actId: aref.id, hasPhoto: true }).catch(onErr);
+  mirrorTargets().forEach(function (g) {
+    var wq = gcol(g, 'workouts').where('userId', '==', me()).where('date', '==', TODAY);
+    wq.get().then(function (sn) {
+      if (!sn.empty) return;
+      var a = gcol(g, 'activities').doc();
+      return a.set({ userId: me(), text: nm(me()) + ' treinou · ' + WT[wt], createdAt: Date.now(), reactions: {}, comments: [], photo: photo, kind: 'workout' }).then(function () { return gcol(g, 'workouts').add({ userId: me(), date: TODAY, type: wt, createdAt: Date.now(), actId: a.id, hasPhoto: true }); });
+    }).catch(onErr);
+  });
   ui.wPhoto = '';
   if (n === r.workoutBonusAt) post(nm(me()) + ' completou ' + n + ' treinos essa semana 🔥');
   say(n >= r.workoutBonusAt ? '⭐ Meta + bônus! ' + n + ' treinos' : n >= r.workoutsPerWeek ? '🟢 Meta cumprida! ' + n + ' treinos' : 'Treino registrado ✅ ' + n + '/' + r.workoutsPerWeek);
@@ -588,7 +602,17 @@ function addCardio() {
   S.cardios.push({ id: 'tmp' + Date.now(), userId: me(), date: TODAY, time: t, type: ui.cType, minutes: m, createdAt: Date.now() });
   grp().collection('cardios').add({ userId: me(), date: TODAY, time: t, type: ui.cType, minutes: m, note: ui.f.cnote || '', createdAt: Date.now() }).catch(onErr);
   if (m >= r.cardioMinMinutes) post(nm(me()) + ' fez ' + m + ' min de ' + ui.cType + ' 🏃');
-  ui.f.cnote = ''; say(m >= r.cardioMinMinutes ? 'Cardio registrado ✅ +' + r.points.cardio + ' pts' : 'Registrado, mas menos de ' + r.cardioMinMinutes + ' min não pontua');
+  var ct = ui.cType, cn = ui.f.cnote || '', bad = [];
+  mirrorTargets().forEach(function (g) {
+    var mn = gRules(g).cardioMinMinutes; if (m < mn) bad.push(g.name);
+    gcol(g, 'cardios').where('userId', '==', me()).where('date', '==', TODAY).get().then(function (sn) {
+      if (sn.docs.some(function (d) { return (d.data().minutes || 0) >= mn; })) return;
+      var add = gcol(g, 'cardios').add({ userId: me(), date: TODAY, time: t, type: ct, minutes: m, note: cn, createdAt: Date.now() });
+      if (m >= mn) add = add.then(function () { return gcol(g, 'activities').add({ userId: me(), text: nm(me()) + ' fez ' + m + ' min de ' + ct + ' 🏃', createdAt: Date.now(), reactions: {}, comments: [] }); });
+      return add;
+    }).catch(onErr);
+  });
+  ui.f.cnote = ''; if (bad.length) return say('Registrado ✅ Não pontua em: ' + bad.join(', ') + ' (mínimo maior)'); say(m >= r.cardioMinMinutes ? 'Cardio registrado ✅ +' + r.points.cardio + ' pts' : 'Registrado, mas menos de ' + r.cardioMinMinutes + ' min não pontua');
 }
 function delDoc(col, id) { grp().collection(col).doc(id).delete().catch(onErr); }
 function react(actId, key) {
@@ -837,7 +861,9 @@ V.register = function () {
   var hab = function (f, streak, best, unit) {
     var v = log[f]; return '<div class="card"><b class="disp">🔥 ' + streak + ' ' + (streak === 1 ? 'dia' : 'dias') + ' ' + unit + '</b><div class="sm muted">Maior sequência: ' + best + '</div><div class="seg"><button class="' + (v === true ? 'yes' : '') + '" data-a="hab:' + f + ':1">✅ Cumpri</button><button class="' + (v === false ? 'no' : '') + '" data-a="hab:' + f + ':0">❌ Não cumpri</button></div></div>';
   };
-  return '<h1>Registrar</h1><p class="muted">Tudo em um só lugar · hoje</p>' + dayChecklist() +
+  var mirUI = '';
+  if (S.groups.length > 1) { var moff = mirOff(); mirUI = '<div class="card sm"><b>Registrar também em:</b><div class="chips w" style="margin-top:8px">' + S.groups.filter(function (x) { return x.id !== S.gid; }).map(function (x) { return chip((moff.indexOf(x.id) < 0 ? '✓ ' : '') + esc(x.name), moff.indexOf(x.id) < 0, 'mir:' + x.id); }).join('') + '</div><div class="tiny muted" style="margin-top:6px">Cada grupo conta pelas suas próprias regras.</div></div>'; }
+  return '<h1>Registrar</h1><p class="muted">Tudo em um só lugar · hoje</p>' + mirUI + dayChecklist() +
     '<h2>🏋️ Treino <span class="sm muted">· semana ' + mine.workoutsThisWeek + '/' + r.workoutsPerWeek + (mine.workoutStatus === 'bonus' ? ' ⭐' : '') + '</span></h2><div class="card"><div class="chips w">' + Object.keys(W).map(function (k) { return chip(W[k], ui.wType === k, 'wt:' + k); }).join('') + '</div>' + (doneW ? '<div class="ck ok" style="margin-top:10px">✅ Treino de hoje já registrado. Volte amanhã! (Para corrigir, apague em Perfil → Histórico.)</div>' : photoPicker() + '<button class="btn" data-a="saveW" style="margin-top:8px">📸 Registrar treino</button>') + '</div>' +
     '<h2>🏃 Cardio <span class="sm muted">· semana ' + mine.cardioThisWeek + '/' + r.cardioPerWeek + '</span></h2><div class="card"><div class="chips w">' + Object.keys(C).map(function (k) { return chip(C[k], ui.cType === k, 'ct:' + k); }).join('') + '</div>' +
     (doneC ? '<div class="ck ok" style="margin-top:10px">✅ Cardio de hoje já registrado. Volte amanhã! (Para corrigir, apague em Perfil → Histórico.)</div></div>' : '<div class="grid2" style="margin-top:6px">' + field('cmin', 'DURAÇÃO (MIN)', 'inputmode="numeric" placeholder="30"') + field('ctime', 'HORÁRIO', 'placeholder="07:30"') + '</div>' + field('cnote', 'OBSERVAÇÃO (OPCIONAL)', 'placeholder="Como foi?"') +
@@ -903,6 +929,7 @@ V.profile = function () {
       '<button class="btn ghost" data-a="pedit" style="margin:12px auto 0;display:block;width:auto;padding-inline:1.25rem">✏️ Editar perfil</button></div>';
   }
   if (ui.f.pname === undefined) ui.f.pname = pr.name || '';
+  if (g && S.groups.length > 1) html += '<div class="sm muted" style="margin-top:14px">Grupo</div><div class="chips w" style="margin-top:6px">' + S.groups.map(function (x) { return chip(esc(x.name), x.id === S.gid, 'grp:' + x.id); }).join('') + '</div>';
   if (g) {
     var c = challenge(), all = statsAll(), mine = all.filter(function (s) { return s.userId === me(); })[0], rank = buildRanking(all, 'geral'), pos = (rank.filter(function (x) { return x.userId === me(); })[0] || {}).position || 0;
     var got = unlockedAchievements(me(), mine, data(), c, pos, c.status === 'ended');
@@ -924,7 +951,7 @@ V.profile = function () {
       '<h2>Histórico</h2>' + (hist.length ? hist.map(function (h) { return '<div class="card row between" style="padding:12px 14px"><div><b class="sm">' + h.t + '</b><div class="tiny muted">' + formatBR(h.date) + '</div></div><button class="link bad" data-a="del:' + h.col + ':' + h.id + '">' + (ui.confirm === 'del:' + h.id ? 'Confirmar' : 'Excluir') + '</button></div>'; }).join('') : '<p class="muted sm">Sem registros ainda.</p>');
   }
   var th = lsGet('d30-theme') || 'dark';
-  html += '<div class="card sm muted">🔔 O app ainda não envia lembretes. Use o alarme do celular para água, treino e cardio.</div><div class="tiny muted" style="text-align:center;margin-top:10px">versão 24</div>';
+  html += '<div class="card sm muted">🔔 O app ainda não envia lembretes. Use o alarme do celular para água, treino e cardio.</div><div class="tiny muted" style="text-align:center;margin-top:10px">versão 25</div>';
   return html;
 };
 
@@ -1003,6 +1030,7 @@ document.addEventListener('click', function (e) {
   else if (a === 'hab') setLog(TODAY, (function () { var o = {}; o[p[1]] = p[2] === '1'; return o; })());
   else if (a === 'react') react(p[1], p[2]); else if (a === 'open') { ui.open = ui.open === p[1] ? null : p[1]; render(); } else if (a === 'cmt') sendComment(p[1]);
   else if (a === 'create') createGroup(); else if (a === 'join') joinGroup();
+  else if (a === 'mir') { var mo = mirOff(), ix = mo.indexOf(p[1]); if (ix >= 0) mo.splice(ix, 1); else mo.push(p[1]); lsSet('d30-mir', JSON.stringify(mo)); render(); }
   else if (a === 'grp') { S.gid = p[1]; attachGroup(); render(); }
   else if (a === 'copy') copyText(curGroup().inviteCode); else if (a === 'share') shareInvite();
   else if (a === 'saveAdmin') saveAdmin();
@@ -1027,7 +1055,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 
 
 
-var APP_V=24;
+var APP_V=25;
 (function(){function chk(){try{fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){var m=t.match(/var APP_V=(\d+);/);if(m&&+m[1]>APP_V){location.replace(location.pathname+'?v='+m[1]);}}).catch(function(){});}catch(e){}}
 chk();document.addEventListener('visibilitychange',function(){if(!document.hidden)chk();});})();
 </script>
