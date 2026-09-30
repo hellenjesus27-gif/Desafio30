@@ -40,8 +40,7 @@ html{font-size:clamp(16px,calc(100vw / 22.5),20px);-webkit-text-size-adjust:100%
 :root[data-theme="dark"]{color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{background:var(--bg)}
-html,body{height:100%;overflow:hidden;overscroll-behavior:none}body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:0.9375rem;line-height:1.45}
-#app{position:fixed;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;padding-inline:1rem;padding-block:calc(0.875rem + env(safe-area-inset-top,0px)) calc(6.875rem + env(safe-area-inset-bottom,0px))}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:0.9375rem;line-height:1.45;padding-inline:1rem;padding-block:calc(0.875rem + env(safe-area-inset-top,0px)) calc(6.875rem + env(safe-area-inset-bottom,0px));min-height:calc(100vh + 2px)}
 main{max-width:35rem;margin-inline:auto}
 h1,h2,h3{font-family:var(--f-display);margin:0;letter-spacing:-.01em}
 h1{font-size:1.45rem;line-height:1.15} h2{font-size:1.05rem;margin:1.625rem 0 0.75rem} h3{font-size:1rem}
@@ -914,7 +913,7 @@ V.profile = function () {
   }
   var th = lsGet('d30-theme') || 'dark';
   html += '<h2>Aparência</h2><div class="chips">' + chip('📱 Automático', th === 'auto', 'theme:auto') + chip('☀️ Claro', th === 'light', 'theme:light') + chip('🌙 Escuro', th === 'dark', 'theme:dark') + '</div>' +
-    '<div class="card sm muted">🔔 Lembretes de água, treino e cardio chegam no app instalado (versão nativa). Na versão web, use o alarme do celular.</div><button class="btn ghost" data-a="logout">Sair da conta</button><div class="tiny muted" style="text-align:center;margin-top:10px">versão 18</div>' +
+    '<div class="card sm muted">🔔 Lembretes de água, treino e cardio chegam no app instalado (versão nativa). Na versão web, use o alarme do celular.</div><button class="btn ghost" data-a="logout">Sair da conta</button><div class="tiny muted" style="text-align:center;margin-top:10px">versão 19</div>' +
     '<div class="note">Para instalar: Android, menu ⋮ → Adicionar à tela inicial. iPhone, Compartilhar → Adicionar à Tela de Início.</div>';
   return html;
 };
@@ -942,7 +941,7 @@ function doRender() {
   try {
     TODAY = todayISO(); applyTheme();
     var chipScroll = [].map.call(document.querySelectorAll('.chips'), function (e) { return e.scrollLeft; });
-    var a = document.activeElement, focusId = a && a.id && a.tagName === 'INPUT' && a.type !== 'file' ? a.id : null, ss = 0, y = $app.scrollTop, body = '';
+    var a = document.activeElement, focusId = a && a.id && a.tagName === 'INPUT' && a.type !== 'file' ? a.id : null, ss = 0, y = window.scrollY, body = '';
     try { ss = focusId ? a.selectionStart : 0; } catch (e) { ss = 0; }
     if (!S.ready) body = '<div class="busy"><div class="spin"></div></div>';
     else if (!auth) body = '<main><div class="card center"><h3>Não foi possível carregar o Firebase</h3><p class="muted sm">Verifique a internet e recarregue a página.</p></div></main>';
@@ -958,7 +957,7 @@ function doRender() {
       [].forEach.call(document.querySelectorAll('.chips'), function (e, i) { if (chipScroll[i]) e.scrollLeft = chipScroll[i]; });
       fixBars(ui.centerOn); ui.centerOn = false;
       if (focusId) { var n = document.getElementById(focusId); if (n) { n.focus(); try { n.setSelectionRange(ss, ss); } catch (e) {} } }
-      $app.scrollTop = y;
+      window.scrollTo(0, y);
     }
   } catch (e) { console.error(e); } finally { rendering = false; }
 }
@@ -976,14 +975,14 @@ document.addEventListener('keydown', function (e) {
 document.addEventListener('click', function (e) {
   var el = e.target.closest ? e.target.closest('[data-a]') : null; if (!el) return;
   var p = el.getAttribute('data-a').split(':'), a = p[0];
-  if (a === 'tab') { ui.tab = p[1]; lsSet('d30-tab', p[1]); ui.sub = ''; ui.confirm = ''; $app.scrollTop = 0; render(); }
+  if (a === 'tab') { ui.tab = p[1]; lsSet('d30-tab', p[1]); ui.sub = ''; ui.confirm = ''; window.scrollTo(0, 0); render(); }
   else if (a === 'mode') { ui.mode = p[1]; ui.err = ''; render(); }
   else if (a === 'login') doLogin(); else if (a === 'register') doRegister(); else if (a === 'google') doGoogle(); else if (a === 'reset') doReset();
   else if (a === 'filter') { ui.filter = p[1]; ui.centerOn = true; render(); }
   else if (a === 'cs') { var bc = el.parentNode.querySelector('.chips'); if (bc) bc.scrollBy({ left: parseInt(p[1], 10) * 170, behavior: 'smooth' }); }
   else if (a === 'day') { ui.day = p[1]; render(); }
   else if (a === 'wt') { ui.wType = p[1]; render(); } else if (a === 'ct') { ui.cType = p[1]; render(); }
-  else if (a === 'sub') { ui.sub = p[1] || ''; ui.confirm = ''; $app.scrollTop = 0; render(); }
+  else if (a === 'sub') { ui.sub = p[1] || ''; ui.confirm = ''; window.scrollTo(0, 0); render(); }
   else if (a === 'wk') { ui.wk = parseInt(p[1], 10); render(); }
   else if (a === 'tg') { var tf = p[2], cv = (myLog(p[1]) || {})[tf], o2 = {}; o2[tf] = cv === undefined ? true : cv === true ? false : firebase.firestore.FieldValue.delete(); setLog(p[1], o2); }
   else if (a === 'reload') location.reload();
@@ -1012,13 +1011,9 @@ function boot() {
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 
 
-(function(){var y0=null,d=0,ind=document.createElement('div');ind.id='ptr';ind.textContent='⟳';ind.style.cssText='position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + .5rem);transform:translate(-50%,-4rem);width:2.4rem;height:2.4rem;border-radius:50%;background:var(--card2);color:var(--fg);display:flex;align-items:center;justify-content:center;font-size:1.3rem;z-index:40;box-shadow:var(--shadow);pointer-events:none;opacity:0';document.body.appendChild(ind);
-function A(){return document.getElementById('app');}
-document.addEventListener('touchstart',function(e){var a=A();y0=(a&&a.scrollTop<=0&&e.touches.length===1&&!e.target.closest('.chips,.tscroll,.scroller,input,textarea'))?e.touches[0].clientY:null;d=0;},{passive:true});
-document.addEventListener('touchmove',function(e){if(y0===null)return;d=e.touches[0].clientY-y0;if(d>100){y0=null;ind.style.opacity=1;location.reload();return;}if(d>0){var m=Math.min(d,110)/110;ind.style.opacity=m;ind.style.transform='translate(-50%,'+(Math.min(d,110)*0.6-64)+'px) rotate('+(d*3)+'deg)';}else{ind.style.opacity=0;}},{passive:true});
-['touchend','touchcancel'].forEach(function(n){document.addEventListener(n,function(){if(y0!==null&&d>70){ind.style.opacity=1;location.reload();}ind.style.opacity=0;ind.style.transform='translate(-50%,-4rem)';y0=null;d=0;},{passive:true});});})();
 
-var APP_V=18;
+
+var APP_V=19;
 (function(){function chk(){try{fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){var m=t.match(/var APP_V=(\d+);/);if(m&&+m[1]>APP_V){location.replace(location.pathname+'?v='+m[1]);}}).catch(function(){});}catch(e){}}
 chk();document.addEventListener('visibilitychange',function(){if(!document.hidden)chk();});})();
 </script>
