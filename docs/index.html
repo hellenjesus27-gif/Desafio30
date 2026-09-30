@@ -94,7 +94,7 @@ input.i:focus{outline:2px solid var(--rose);outline-offset:0}
 .cell b{font-family:var(--f-display);font-size:.95rem} .cell small{font-size:.6rem;opacity:.75}
 .cell.full{background:var(--ok)} .cell.partial{background:var(--warn)} .cell.none{background:var(--bad)} .cell.fut{background:var(--card2);color:var(--muted)} .cell.sel{border-color:var(--fg)}
 .ach{text-align:center} .ach .ic{font-size:2rem} .ach.off{opacity:.4}
-nav{position:fixed;left:0.75rem;right:0.75rem;bottom:calc(0.625rem + env(safe-area-inset-bottom,0px));max-width:32.5rem;margin-inline:auto;display:flex;justify-content:space-around;align-items:center;background:var(--nav);backdrop-filter:blur(1.125rem);-webkit-backdrop-filter:blur(1.125rem);border:1px solid var(--line);border-radius:1.625rem;padding:0.5rem 0.375rem;box-shadow:var(--shadow);z-index:10}
+nav{position:fixed;left:0.75rem;right:0.75rem;bottom:calc(0.25rem + env(safe-area-inset-bottom,0px) * 0.25);max-width:32.5rem;margin-inline:auto;display:flex;justify-content:space-around;align-items:center;background:var(--nav);backdrop-filter:blur(1.125rem);-webkit-backdrop-filter:blur(1.125rem);border:1px solid var(--line);border-radius:1.625rem;padding:0.5rem 0.375rem calc(0.5rem + env(safe-area-inset-bottom,0px) * 0.3);box-shadow:var(--shadow);z-index:10}
 .tab{flex:1;border:0;background:none;color:var(--muted);font:inherit;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:3rem;cursor:pointer}
 .tab .e{font-size:1.25rem;line-height:1} .tab small{font-size:.62rem;font-weight:800} .tab.on{color:var(--rose)}
 .tab.plus .e{background:linear-gradient(135deg,var(--rose),var(--rose2));color:var(--on-rose);width:3rem;height:3rem;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin-top:-26px;box-shadow:0 0.5rem 1.25rem rgba(217,103,139,.45)}
@@ -913,7 +913,7 @@ V.profile = function () {
   }
   var th = lsGet('d30-theme') || 'dark';
   html += '<h2>Aparência</h2><div class="chips">' + chip('📱 Automático', th === 'auto', 'theme:auto') + chip('☀️ Claro', th === 'light', 'theme:light') + chip('🌙 Escuro', th === 'dark', 'theme:dark') + '</div>' +
-    '<div class="card sm muted">🔔 Lembretes de água, treino e cardio chegam no app instalado (versão nativa). Na versão web, use o alarme do celular.</div><button class="btn ghost" data-a="logout">Sair da conta</button><div class="tiny muted" style="text-align:center;margin-top:10px">versão 19</div>' +
+    '<div class="card sm muted">🔔 Lembretes de água, treino e cardio chegam no app instalado (versão nativa). Na versão web, use o alarme do celular.</div><button class="btn ghost" data-a="logout">Sair da conta</button><div class="tiny muted" style="text-align:center;margin-top:10px">versão 20</div>' +
     '<div class="note">Para instalar: Android, menu ⋮ → Adicionar à tela inicial. iPhone, Compartilhar → Adicionar à Tela de Início.</div>';
   return html;
 };
@@ -1013,7 +1013,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 
 
 
-var APP_V=19;
+var APP_V=20;
 (function(){function chk(){try{fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){var m=t.match(/var APP_V=(\d+);/);if(m&&+m[1]>APP_V){location.replace(location.pathname+'?v='+m[1]);}}).catch(function(){});}catch(e){}}
 chk();document.addEventListener('visibilitychange',function(){if(!document.hidden)chk();});})();
 </script>
