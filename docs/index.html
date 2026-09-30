@@ -747,7 +747,9 @@ V.home = function () {
   var habit = function (field, ico, label, streak) {
     var v = log[field]; return '<button class="card tile" data-a="hab:' + field + ':' + (v === true ? '0' : '1') + '" style="text-align:left;font:inherit;color:inherit;cursor:pointer"><span class="k">' + ico + ' ' + label + '</span><span class="v">' + (v === true ? '✅ Cumpri' : v === false ? '❌ Não cumpri' : 'Toque p/ marcar') + '</span><span class="sm muted">🔥 ' + streak + ' ' + (streak === 1 ? 'dia' : 'dias') + '</span></button>';
   };
-  return '<div class="row between" style="margin-bottom:16px"><div class="row" data-a="tab:profile" style="cursor:pointer">' + av(me(), 48) + '<div><h1>Olá, ' + esc((S.profile.name || '').split(' ')[0]) + '! 👋</h1><div class="sm muted">' + esc(g.name) + '</div></div></div>' +
+  var isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent), standalone = window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches), hint = '';
+  if (!standalone && !lsGet('d30-hint')) hint = '<div class="card sm" style="margin-bottom:12px;display:flex;gap:10px;align-items:center;justify-content:space-between"><span>📲 <b>Instale o app</b> para a barra ficar embaixo e abrir em tela cheia: ' + (isIOS ? 'toque em <b>Compartilhar</b> → <b>Adicionar à Tela de Início</b>.' : 'menu <b>⋮</b> → <b>Adicionar à tela inicial</b>.') + '</span><button class="link" data-a="hint">OK</button></div>';
+  return hint + '<div class="row between" style="margin-bottom:16px"><div class="row" data-a="tab:profile" style="cursor:pointer">' + av(me(), 48) + '<div><h1>Olá, ' + esc((S.profile.name || '').split(' ')[0]) + '! 👋</h1><div class="sm muted">' + esc(g.name) + '</div></div></div>' +
     ring(pct(dn, c.durationDays), 58, 6, 'var(--rose)', '<b class="disp" style="font-size:.9rem">' + dn + '</b><span class="tiny muted">/' + c.durationDays + '</span>') + '</div>' +
     '<div class="hero"><div class="row between"><div><div class="tiny" style="font-weight:800;letter-spacing:.1em;opacity:.8">SUA POSIÇÃO</div><div class="num">#' + pos + '</div><div class="sm" style="opacity:.8">de ' + rank.length + ' participantes</div></div>' +
     '<div style="text-align:right"><div class="disp" style="font-size:1.7rem;font-weight:800">⭐ ' + mine.points + '</div><div class="sm" style="opacity:.85">pontos</div><div class="pill rose" style="margin-top:8px">🔥 ' + mine.streak + ' dias de sequência</div></div></div></div>' +
@@ -912,7 +914,7 @@ V.profile = function () {
   }
   var th = lsGet('d30-theme') || 'dark';
   html += '<h2>Aparência</h2><div class="chips">' + chip('📱 Automático', th === 'auto', 'theme:auto') + chip('☀️ Claro', th === 'light', 'theme:light') + chip('🌙 Escuro', th === 'dark', 'theme:dark') + '</div>' +
-    '<div class="card sm muted">🔔 Lembretes de água, treino e cardio chegam no app instalado (versão nativa). Na versão web, use o alarme do celular.</div><button class="btn ghost" data-a="logout">Sair da conta</button><div class="tiny muted" style="text-align:center;margin-top:10px">versão 17</div>' +
+    '<div class="card sm muted">🔔 Lembretes de água, treino e cardio chegam no app instalado (versão nativa). Na versão web, use o alarme do celular.</div><button class="btn ghost" data-a="logout">Sair da conta</button><div class="tiny muted" style="text-align:center;margin-top:10px">versão 18</div>' +
     '<div class="note">Para instalar: Android, menu ⋮ → Adicionar à tela inicial. iPhone, Compartilhar → Adicionar à Tela de Início.</div>';
   return html;
 };
@@ -1000,6 +1002,7 @@ document.addEventListener('click', function (e) {
   else if (a === 'del') { var col = p[1], did = p[2]; ask('del:' + did, function () { delDoc(col, did); }); }
   else if (a === 'saveName') { var n = (ui.f.pname || '').trim(); if (n) saveProfile({ name: n }); }
   else if (a === 'theme') { lsSet('d30-theme', p[1]); render(); }
+  else if (a === 'hint') { lsSet('d30-hint', '1'); render(); }
   else if (a === 'logout') { auth.signOut(); ui.tab = 'home'; }
 });
 function boot() {
@@ -1015,7 +1018,7 @@ document.addEventListener('touchstart',function(e){var a=A();y0=(a&&a.scrollTop<
 document.addEventListener('touchmove',function(e){if(y0===null)return;d=e.touches[0].clientY-y0;if(d>100){y0=null;ind.style.opacity=1;location.reload();return;}if(d>0){var m=Math.min(d,110)/110;ind.style.opacity=m;ind.style.transform='translate(-50%,'+(Math.min(d,110)*0.6-64)+'px) rotate('+(d*3)+'deg)';}else{ind.style.opacity=0;}},{passive:true});
 ['touchend','touchcancel'].forEach(function(n){document.addEventListener(n,function(){if(y0!==null&&d>70){ind.style.opacity=1;location.reload();}ind.style.opacity=0;ind.style.transform='translate(-50%,-4rem)';y0=null;d=0;},{passive:true});});})();
 
-var APP_V=17;
+var APP_V=18;
 (function(){function chk(){try{fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){var m=t.match(/var APP_V=(\d+);/);if(m&&+m[1]>APP_V){location.replace(location.pathname+'?v='+m[1]);}}).catch(function(){});}catch(e){}}
 chk();document.addEventListener('visibilitychange',function(){if(!document.hidden)chk();});})();
 </script>
