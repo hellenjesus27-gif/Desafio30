@@ -691,7 +691,17 @@ function copyText(t) {
 }
 function fallbackCopy(t) { var a = document.createElement('textarea'); a.value = t; a.style.position = 'fixed'; a.style.opacity = '0'; document.body.appendChild(a); a.select(); try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(a); }
 function shareInvite() {
-  var g = curGroup(), url = location.origin + location.pathname.replace(/index\.html$/, '') + '?convite=' + encodeURIComponent(g.inviteCode), text = 'Entre no meu grupo "' + g.name + '" no Desafio 30! 💪🔥\nToque no link para entrar:\n' + url + '\n(Código: ' + g.inviteCode + ')';
+  var g = curGroup(), r = rules(), url = location.origin + location.pathname.replace(/index\.html$/, '') + '?convite=' + encodeURIComponent(g.inviteCode),
+    text = 'Entre no meu grupo "' + g.name + '" no Desafio 30! 💪🔥\n\n📋 Regras:\n' +
+      '🏋️ Mínimo de ' + r.workoutsPerWeek + ' treinos por semana (' + r.points.workout + ' pts cada, o ' + r.workoutBonusAt + 'º treino +' + r.points.workoutBonus + ')\n' +
+      '🏃 ' + r.cardioPerWeek + ' cardios por semana de ' + r.cardioMinMinutes + '+ min (' + r.points.cardio + ' pts)\n' +
+      '💧 ' + fmtL(r.waterGoalMl) + ' L de água por dia (' + r.points.water + ' pts)\n' +
+      '🍫 Zero doces (' + r.points.noSweets + ' pts/dia)\n' +
+      '🍺 Zero álcool (' + r.points.noAlcohol + ' pts/dia)\n' +
+      '📅 ' + g.durationDays + ' dias, começando em ' + formatBR(g.startDate) + '\n\n' +
+      '1️⃣ Toque no link para entrar:\n' + url + '\n\n' +
+      '2️⃣ Instale o app:\n📱 iPhone: Compartilhar → Adicionar à Tela de Início\n🤖 Android: menu ⋮ → Adicionar à tela inicial\n\n' +
+      '(Código do grupo: ' + g.inviteCode + ')';
   if (navigator.share) navigator.share({ title: 'Desafio 30', text: text }).catch(function () {}); else copyText(text);
 }
 function resizePhoto(file, cb, max) {
@@ -997,7 +1007,7 @@ V.profile = function () {
       '<h2>Histórico</h2>' + (hist.length ? hist.map(function (h) { return '<div class="card row between" style="padding:12px 14px"><div><b class="sm">' + h.t + '</b><div class="tiny muted">' + formatBR(h.date) + '</div></div><button class="link bad" data-a="del:' + h.col + ':' + h.id + '">' + (ui.confirm === 'del:' + h.id ? 'Confirmar' : 'Excluir') + '</button></div>'; }).join('') : '<p class="muted sm">Sem registros ainda.</p>');
   }
   var th = lsGet('d30-theme') || 'dark';
-  html += '<div class="card sm muted">🔔 O app ainda não envia lembretes. Use o alarme do celular para água, treino e cardio.</div><div class="tiny muted" style="text-align:center;margin-top:10px">versão 30</div>';
+  html += '<div class="card sm muted">🔔 O app ainda não envia lembretes. Use o alarme do celular para água, treino e cardio.</div><div class="tiny muted" style="text-align:center;margin-top:10px">versão 31</div>';
   return html;
 };
 
@@ -1105,7 +1115,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 
 
 
-var APP_V=30;
+var APP_V=31;
 (function(){function chk(){try{fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){var m=t.match(/var APP_V=(\d+);/);if(m&&+m[1]>APP_V){location.replace(location.pathname+'?v='+m[1]);}}).catch(function(){});}catch(e){}}
 chk();document.addEventListener('visibilitychange',function(){if(!document.hidden)chk();});})();
 </script>
