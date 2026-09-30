@@ -453,6 +453,7 @@ var firebaseConfig = {
   appId: "1:229576494541:web:f160e398a38d1bb1d94884"
 };
 var auth = null, db = null, $app = null, TODAY = todayISO();
+(function () { try { var q = new URLSearchParams(location.search).get('convite'); if (q) { try { localStorage.setItem('d30-invite', q.trim().toUpperCase()); } catch (e) {} history.replaceState(null, '', location.pathname); } } catch (e) {} })();
 var S = { ready: false, user: null, profile: null, groups: [], gid: null, users: {}, workouts: [], cardios: [], days: [], acts: [] };
 var ui = { tab: (['home', 'ranking', 'register', 'group', 'profile', 'calendar'].indexOf(lsGet('d30-tab')) >= 0 ? lsGet('d30-tab') : 'home'), mode: 'login', f: {}, filter: 'geral', day: TODAY, wType: 'musculacao', cType: 'caminhada', open: null, toast: '', busy: false, err: '', photo: '', ach: '', wPhoto: '', sub: '', wk: null, confirm: '', pendingProfile: null };
 var userUnsubs = [], groupUnsubs = [], attachedGid = null;
@@ -509,8 +510,19 @@ function listenGroups() {
     S.groups = qs.docs.map(function (d) { var g = d.data(); g.id = d.id; return g; }).filter(function (g) { return !g.deleted; });
     var ids = S.groups.map(function (g) { return g.id; });
     if (!S.gid || ids.indexOf(S.gid) < 0) { var last = lsGet('d30-gid'); S.gid = ids.indexOf(last) >= 0 ? last : (ids[0] || null); }
-    attachGroup(); render();
+    attachGroup(); render(); processInvite();
   }, onErr));
+}
+var inviteBusy = false;
+function processInvite() {
+  var code = lsGet('d30-invite'); if (!code || inviteBusy || !S.user) return;
+  inviteBusy = true;
+  db.collection('invites').doc(code).get().then(function (d) {
+    if (!d.exists) { lsSet('d30-invite', ''); say('Convite não encontrado 😕'); return; }
+    var gid = d.data().groupId;
+    if (S.groups.some(function (g) { return g.id === gid; })) { lsSet('d30-invite', ''); S.gid = gid; attachGroup(); ui.tab = 'home'; say('Você já está nesse grupo ✅'); return; }
+    return db.collection('groups').doc(gid).update({ memberIds: firebase.firestore.FieldValue.arrayUnion(me()) }).then(function () { lsSet('d30-invite', ''); S.gid = gid; ui.tab = 'home'; say('Você entrou no grupo 🎉'); });
+  }).catch(function (e) { lsSet('d30-invite', ''); onErr(e); }).then(function () { inviteBusy = false; });
 }
 function attachGroup() {
   var g = curGroup();
@@ -679,7 +691,7 @@ function copyText(t) {
 }
 function fallbackCopy(t) { var a = document.createElement('textarea'); a.value = t; a.style.position = 'fixed'; a.style.opacity = '0'; document.body.appendChild(a); a.select(); try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(a); }
 function shareInvite() {
-  var g = curGroup(), url = location.origin + location.pathname, text = 'Entre no meu grupo "' + g.name + '" no Desafio 30! 💪🔥\nCódigo: ' + g.inviteCode + '\n' + url;
+  var g = curGroup(), url = location.origin + location.pathname.replace(/index\.html$/, '') + '?convite=' + encodeURIComponent(g.inviteCode), text = 'Entre no meu grupo "' + g.name + '" no Desafio 30! 💪🔥\nToque no link para entrar:\n' + url + '\n(Código: ' + g.inviteCode + ')';
   if (navigator.share) navigator.share({ title: 'Desafio 30', text: text }).catch(function () {}); else copyText(text);
 }
 function resizePhoto(file, cb, max) {
@@ -770,7 +782,7 @@ function installCard(dismissable) {
 }
 V.auth = function () {
   var m = ui.mode, isReg = m === 'register';
-  return '<main><img class="logo" src="icon-192.png" alt="Logo"><div class="brand">DESAFIO 30</div><p class="muted center" style="margin-bottom:18px">Treine, dispute e evolua com seus amigos</p>' +
+  return '<main><img class="logo" src="icon-192.png" alt="Logo"><div class="brand">DESAFIO 30</div><p class="muted center" style="margin-bottom:18px">Treine, dispute e evolua com seus amigos</p>' + (lsGet('d30-invite') ? '<div class="card center" style="border:2px solid var(--rose);margin-bottom:14px"><b>🎟️ Você foi convidado para um grupo!</b><div class="sm muted" style="margin-top:4px">' + (isReg ? 'Crie sua conta' : 'Entre ou crie sua conta') + ' e você já entra no grupo automaticamente.</div></div>' : '') +
     '<div class="card"><button class="btn google" data-a="google" style="margin-top:0"><svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>Continuar com Google</button>' +
     '<div class="sep">ou com e-mail</div>' +
     '<div class="seg" style="margin:0 0 14px"><button class="' + (!isReg ? 'yes' : '') + '" data-a="mode:login">Entrar</button><button class="' + (isReg ? 'yes' : '') + '" data-a="mode:register">Criar conta</button></div>' +
@@ -982,7 +994,7 @@ V.profile = function () {
       '<h2>Histórico</h2>' + (hist.length ? hist.map(function (h) { return '<div class="card row between" style="padding:12px 14px"><div><b class="sm">' + h.t + '</b><div class="tiny muted">' + formatBR(h.date) + '</div></div><button class="link bad" data-a="del:' + h.col + ':' + h.id + '">' + (ui.confirm === 'del:' + h.id ? 'Confirmar' : 'Excluir') + '</button></div>'; }).join('') : '<p class="muted sm">Sem registros ainda.</p>');
   }
   var th = lsGet('d30-theme') || 'dark';
-  html += '<div class="card sm muted">🔔 O app ainda não envia lembretes. Use o alarme do celular para água, treino e cardio.</div><div class="tiny muted" style="text-align:center;margin-top:10px">versão 28</div>';
+  html += '<div class="card sm muted">🔔 O app ainda não envia lembretes. Use o alarme do celular para água, treino e cardio.</div><div class="tiny muted" style="text-align:center;margin-top:10px">versão 29</div>';
   return html;
 };
 
@@ -1089,7 +1101,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 
 
 
-var APP_V=28;
+var APP_V=29;
 (function(){function chk(){try{fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){var m=t.match(/var APP_V=(\d+);/);if(m&&+m[1]>APP_V){location.replace(location.pathname+'?v='+m[1]);}}).catch(function(){});}catch(e){}}
 chk();document.addEventListener('visibilitychange',function(){if(!document.hidden)chk();});})();
 </script>
