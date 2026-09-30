@@ -907,13 +907,16 @@ V.group = function () {
   }
   var mkMembers = function (manage) { return g.memberIds.map(function (id) { return '<div class="card row" style="padding:12px 14px">' + av(id, 40) + '<b class="grow">' + esc(nm(id)) + (id === g.adminId ? ' 👑' : '') + (id === me() ? ' <span class="muted">(você)</span>' : '') + '</b>' + (manage && isAdmin && id !== g.adminId ? '<button class="link bad" data-a="rm:' + id + '">' + (ui.confirm === 'rm:' + id ? 'Confirmar' : 'Remover') + '</button>' : '') + '</div>'; }).join(''); };
   var members = mkMembers(false);
+  if (ui.sub === 'new') return '<button class="link" data-a="sub:">← Voltar ao grupo</button><h1>Novo grupo ➕</h1><div class="sm muted">Você pode ficar em vários grupos ao mesmo tempo.</div>' +
+    '<h2>Criar um grupo</h2><div class="card">' + field('gname', 'NOME DO GRUPO', 'placeholder="Ex.: Amigas em ação"') + '<button class="btn" data-a="create" style="margin-top:0">' + (ui.busy ? 'Criando…' : 'Criar grupo') + '</button></div>' +
+    '<h2>Entrar em um grupo</h2><div class="card">' + field('jcode', 'CÓDIGO DE CONVITE', 'autocapitalize="characters" placeholder="D30-XXXXXX"') + '<button class="btn sec" data-a="join" style="margin-top:0">Entrar</button></div>';
   if (ui.sub === 'settings') return '<button class="link" data-a="sub:">← Voltar ao grupo</button><h1>Ajustes ⚙️</h1><div class="sm muted">' + esc(g.name) + '</div>' + 
     '<h2>Regras</h2><div class="card"><p>🏋️ Mínimo de <b>' + r.workoutsPerWeek + ' treinos</b> por semana · ' + r.points.workout + ' pts cada, 5º treino +' + r.points.workoutBonus + '</p><p>🏃 <b>' + r.cardioPerWeek + ' cardios</b> por semana de ' + r.cardioMinMinutes + '+ min · ' + r.points.cardio + ' pts</p><p>💧 <b>' + fmtL(r.waterGoalMl) + ' L</b> por dia · ' + r.points.water + ' pts</p><p>🍫 Zero doces · ' + r.points.noSweets + ' pts/dia</p><p>🍺 Zero álcool · ' + r.points.noAlcohol + ' pts/dia</p></div>' + (isAdmin ? adm : '') + '<h2>Participantes (' + g.memberIds.length + ')</h2>' + mkMembers(true) + 
     '<h2>Outro grupo</h2><div class="card">' + field('jcode', 'ENTRAR COM CÓDIGO', 'autocapitalize="characters" placeholder="D30-XXXXXX"') + '<button class="btn sec" data-a="join" style="margin-top:0">Entrar</button>' + field('gname', 'OU CRIAR NOVO GRUPO', 'placeholder="Nome do grupo"') + '<button class="btn sec" data-a="create" style="margin-top:0">Criar grupo</button></div>';
   return '<div class="row between"><h1>Grupo 👥</h1><button class="chip" data-a="sub:settings">⚙️ Ajustes</button></div>' +
     '<div class="hero" style="margin-top:12px"><div class="disp" style="font-size:1.35rem;font-weight:800">' + esc(g.name) + '</div><div class="sm" style="opacity:.85">' + formatBR(c.startDate) + ' → ' + formatBR(addDays(c.startDate, c.durationDays - 1)) + ' · ' + c.durationDays + ' dias · ' + (c.status === 'ended' ? '🏁 Encerrado' : '🟢 Em andamento') + '</div>' +
     '<div class="tiny" style="margin-top:14px;font-weight:800;letter-spacing:.1em;opacity:.8">CÓDIGO DE CONVITE</div><div class="code">' + esc(g.inviteCode) + '</div><div class="grid2" style="margin-top:12px"><button class="btn sec" style="margin:0" data-a="copy">Copiar</button><button class="btn" style="margin:0" data-a="share">Compartilhar</button></div></div>' +
-    (S.groups.length > 1 ? '<h2>Meus grupos</h2><div class="chips">' + S.groups.map(function (x) { return chip(esc(x.name), x.id === g.id, 'grp:' + x.id); }).join('') + '</div>' : '') +
+    '<h2>Meus grupos</h2><div class="chips w">' + S.groups.map(function (x) { return chip(esc(x.name), x.id === g.id, 'grp:' + x.id); }).join('') + chip('➕ Novo grupo', false, 'sub:new') + '</div>' +
     '<h2>Atividades</h2>' + (feed || '<p class="muted sm">Sem atividades ainda.</p>') + '<h2>Participantes (' + g.memberIds.length + ')</h2>' + members +
     '';
 };
@@ -951,7 +954,7 @@ V.profile = function () {
       '<h2>Histórico</h2>' + (hist.length ? hist.map(function (h) { return '<div class="card row between" style="padding:12px 14px"><div><b class="sm">' + h.t + '</b><div class="tiny muted">' + formatBR(h.date) + '</div></div><button class="link bad" data-a="del:' + h.col + ':' + h.id + '">' + (ui.confirm === 'del:' + h.id ? 'Confirmar' : 'Excluir') + '</button></div>'; }).join('') : '<p class="muted sm">Sem registros ainda.</p>');
   }
   var th = lsGet('d30-theme') || 'dark';
-  html += '<div class="card sm muted">🔔 O app ainda não envia lembretes. Use o alarme do celular para água, treino e cardio.</div><div class="tiny muted" style="text-align:center;margin-top:10px">versão 25</div>';
+  html += '<div class="card sm muted">🔔 O app ainda não envia lembretes. Use o alarme do celular para água, treino e cardio.</div><div class="tiny muted" style="text-align:center;margin-top:10px">versão 26</div>';
   return html;
 };
 
@@ -1055,7 +1058,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 
 
 
-var APP_V=25;
+var APP_V=26;
 (function(){function chk(){try{fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){var m=t.match(/var APP_V=(\d+);/);if(m&&+m[1]>APP_V){location.replace(location.pathname+'?v='+m[1]);}}).catch(function(){});}catch(e){}}
 chk();document.addEventListener('visibilitychange',function(){if(!document.hidden)chk();});})();
 </script>
