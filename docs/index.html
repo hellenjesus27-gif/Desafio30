@@ -888,8 +888,15 @@ V.group = function () {
 };
 
 V.profile = function () {
-  var g = curGroup(), pr = S.profile, pn0 = (ui.f.pname === undefined ? (ui.f.pname = S.profile.name || '') : 0), html = '<div class="center"><label for="photoProf" style="cursor:pointer;display:inline-block">' + av(me(), 96) + '</label><input type="file" id="photoProf" accept="image/*" hidden><div class="sm muted" style="margin-top:4px">Toque na foto para trocar</div></div>' +
-    '<div class="card" style="margin-top:14px">' + field('pname', 'SEU NOME') + '<button class="btn" data-a="saveName" style="margin-top:0">Salvar nome</button></div>';
+  var g = curGroup(), pr = S.profile, html = '<div style="display:flex;justify-content:flex-end"><button class="link" data-a="logout" style="font-size:.8rem;font-weight:600;opacity:.75;padding:0">Sair</button></div>' +
+    '<div class="center"><label for="photoProf" style="cursor:pointer;display:inline-block">' + av(me(), 96) + '</label><input type="file" id="photoProf" accept="image/*" hidden><div class="sm muted" style="margin-top:4px">Toque na foto para trocar</div></div>';
+  if (ui.pedit) {
+    html += '<div class="card" style="margin-top:14px">' + field('pname', 'NOME', 'maxlength="40"') + field('phandle', '@ (OPCIONAL)', 'maxlength="24" placeholder="seunome" autocapitalize="none" autocorrect="off"') + field('pbio', 'RECADO (OPCIONAL)', 'maxlength="80" placeholder="Ex.: Foco total nos 30 dias 💪"') +
+      '<div class="row" style="gap:10px;margin-top:12px"><button class="btn ghost" data-a="pcancel" style="margin-top:0">Cancelar</button><button class="btn" data-a="saveName" style="margin-top:0">Salvar</button></div></div>';
+  } else {
+    html += '<div class="center" style="margin-top:12px"><h1>' + esc(pr.name || '') + '</h1>' + (pr.handle ? '<div class="muted" style="margin-top:2px">@' + esc(pr.handle) + '</div>' : '') + (pr.bio ? '<div class="sm" style="margin-top:8px;font-style:italic">“' + esc(pr.bio) + '”</div>' : '') +
+      '<button class="btn ghost" data-a="pedit" style="margin:12px auto 0;display:block;width:auto;padding-inline:1.25rem">✏️ Editar perfil</button></div>';
+  }
   if (ui.f.pname === undefined) ui.f.pname = pr.name || '';
   if (g) {
     var c = challenge(), all = statsAll(), mine = all.filter(function (s) { return s.userId === me(); })[0], rank = buildRanking(all, 'geral'), pos = (rank.filter(function (x) { return x.userId === me(); })[0] || {}).position || 0;
@@ -913,7 +920,7 @@ V.profile = function () {
   }
   var th = lsGet('d30-theme') || 'dark';
   html += '<h2>Aparência</h2><div class="chips">' + chip('📱 Automático', th === 'auto', 'theme:auto') + chip('☀️ Claro', th === 'light', 'theme:light') + chip('🌙 Escuro', th === 'dark', 'theme:dark') + '</div>' +
-    '<div class="card sm muted">🔔 Lembretes de água, treino e cardio chegam no app instalado (versão nativa). Na versão web, use o alarme do celular.</div><button class="btn ghost" data-a="logout">Sair da conta</button><div class="tiny muted" style="text-align:center;margin-top:10px">versão 20</div>' +
+    '<div class="card sm muted">🔔 Lembretes de água, treino e cardio chegam no app instalado (versão nativa). Na versão web, use o alarme do celular.</div><div class="tiny muted" style="text-align:center;margin-top:10px">versão 21</div>' +
     '<div class="note">Para instalar: Android, menu ⋮ → Adicionar à tela inicial. iPhone, Compartilhar → Adicionar à Tela de Início.</div>';
   return html;
 };
@@ -999,7 +1006,9 @@ document.addEventListener('click', function (e) {
   else if (a === 'delg') { ask('delg', function () { grp().update({ deleted: true }).then(function () { ui.sub = ''; ui.tab = 'home'; say('Grupo excluído 🗑️'); }).catch(onErr); }); }
   else if (a === 'rm') { var id = p[1]; ask('rm:' + id, function () { grp().update({ memberIds: firebase.firestore.FieldValue.arrayRemove(id) }).then(function () { say('Participante removido'); }).catch(onErr); }); }
   else if (a === 'del') { var col = p[1], did = p[2]; ask('del:' + did, function () { delDoc(col, did); }); }
-  else if (a === 'saveName') { var n = (ui.f.pname || '').trim(); if (n) saveProfile({ name: n }); }
+  else if (a === 'saveName') { var n = (ui.f.pname || '').trim(), h = (ui.f.phandle || '').trim().replace(/^@+/, '').replace(/[^A-Za-z0-9._]/g, '').slice(0, 24), bi = (ui.f.pbio || '').trim().slice(0, 80); if (n) { ui.pedit = false; saveProfile({ name: n, handle: h, bio: bi }); } else say('Coloque um nome'); }
+  else if (a === 'pedit') { ui.f.pname = S.profile.name || ''; ui.f.phandle = S.profile.handle || ''; ui.f.pbio = S.profile.bio || ''; ui.pedit = true; render(); }
+  else if (a === 'pcancel') { ui.pedit = false; render(); }
   else if (a === 'theme') { lsSet('d30-theme', p[1]); render(); }
   else if (a === 'hint') { lsSet('d30-hint', '1'); render(); }
   else if (a === 'logout') { auth.signOut(); ui.tab = 'home'; }
@@ -1013,7 +1022,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 
 
 
-var APP_V=20;
+var APP_V=21;
 (function(){function chk(){try{fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){var m=t.match(/var APP_V=(\d+);/);if(m&&+m[1]>APP_V){location.replace(location.pathname+'?v='+m[1]);}}).catch(function(){});}catch(e){}}
 chk();document.addEventListener('visibilitychange',function(){if(!document.hidden)chk();});})();
 </script>
